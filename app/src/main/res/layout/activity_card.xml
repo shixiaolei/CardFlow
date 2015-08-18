@@ -4,14 +4,13 @@
     android:layout_height="match_parent"
     android:background="#80555555">
 
-    <include
+    <com.demo.card.CardFlow
         android:id="@+id/card_flow"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginBottom="80dp"
         android:layout_marginTop="80dp"
         android:layout_marginLeft="20dp"
-        android:layout_marginRight="20dp"
-        layout="@layout/card_flow" />
+        android:layout_marginRight="20dp" />
 
 </FrameLayout>
