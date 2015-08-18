@@ -11,6 +11,8 @@ public class Card extends FrameLayout {
 
     private View mContent;
 
+    private int mContentHeight;
+
     public Card(Context context) {
         super(context);
         setBackgroundResource(R.drawable.card_bg);
@@ -22,4 +24,15 @@ public class Card extends FrameLayout {
         addView(content);
     }
 
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        if (mContent != null) {
+            mContentHeight = mContent.getMeasuredHeight();
+        }
+    }
+
+    public int getContentHeight() {
+        return mContentHeight;
+    }
 }

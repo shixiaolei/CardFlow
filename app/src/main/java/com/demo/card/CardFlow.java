@@ -64,7 +64,7 @@ public class CardFlow extends ViewGroup {
         for (int i = 0; i < adapter.getCount(); i++) {
             View content = adapter.getView(i, null, null);
             Card card = new Card(getContext());
-            card.addView(content);
+            card.setContent(content);
             addView(card);
         }
     }
@@ -95,13 +95,23 @@ public class CardFlow extends ViewGroup {
             if (child.getVisibility() == GONE) {
                 continue;
             }
+            if (!(child instanceof Card)) {
+                return;
+            }
+            if (!(child.getLayoutParams() instanceof LayoutParams)) {
+                return;
+            }
+            Card card = (Card) child;
+            LayoutParams lp = (LayoutParams) child.getLayoutParams();
             int childLeft = getPaddingLeft();
-            int childRight = childLeft + child.getMeasuredWidth();
+            int childRight = childLeft + card.getMeasuredWidth();
             int childTop = top;
-            int childBottom = top + child.getMeasuredHeight();
+            int childBottom = top + card.getContentHeight();
             child.layout(childLeft, childTop, childRight, childBottom);
             top = childBottom + mDividerSize;
-            mTotalChildHeight += child.getMeasuredHeight() + mDividerSize;
+            mTotalChildHeight += card.getContentHeight() + mDividerSize;
+            lp.realTop = childTop;
+            lp.realBottom = childBottom;
         }
     }
 
@@ -225,7 +235,6 @@ public class CardFlow extends ViewGroup {
                         }
                         notifyScrollStateChangeListener(SCROLL_STATE_IDLE);
                     }
-
                 }
                 endTouch();
                 break;
@@ -276,7 +285,6 @@ public class CardFlow extends ViewGroup {
     public void computeScroll() {
         if (mScroller.computeScrollOffset()) {
             int sy = mScroller.getCurrY();
-
             if (sy != mScrollDistance) {
                 notifyScrollListener(sy < mScrollDistance);
             }
@@ -326,6 +334,9 @@ public class CardFlow extends ViewGroup {
     }
 
     public static class LayoutParams extends MarginLayoutParams {
+        private int realTop;
+        private int realBottom;
+
         public LayoutParams(int width, int height) {
             super(width, height);
         }
