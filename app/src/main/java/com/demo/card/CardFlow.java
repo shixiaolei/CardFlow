@@ -22,8 +22,6 @@ public class CardFlow extends ViewGroup {
     private static final int TOUCH_STATE_REST = 0;
     private static final int TOUCH_STATE_SCROLL = 1;
 
-    private int mDividerSize;
-
     private OverScroller mScroller;
     private VelocityTracker mVelocityTracker;
     private int mTouchSlop;
@@ -35,7 +33,7 @@ public class CardFlow extends ViewGroup {
     private int mOverscrollDistance;
     private int mOverflingDistance;
 
-    private int mOverScrollState = -1;
+    private int mDividerSize;
     private int mOverScrollRange;
 
     private boolean isUnableToDrag = false;
@@ -90,19 +88,20 @@ public class CardFlow extends ViewGroup {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         int count = getChildCount();
-        int top = getPaddingTop();
+        int top = getPaddingTop() - mScrollDistance;
         mTotalChildHeight = 0;
         for (int i = 0; i < count; i++) {
             View child = getChildAt(i);
-            if (child.getVisibility() != GONE) {
-                int childLeft = getPaddingLeft();
-                int childRight = childLeft + child.getMeasuredWidth();
-                int childTop = top;
-                int childBottom = top + child.getMeasuredHeight();
-                child.layout(childLeft, childTop, childRight, childBottom);
-                top = childBottom + mDividerSize;
-                mTotalChildHeight += child.getMeasuredHeight() + mDividerSize;
+            if (child.getVisibility() == GONE) {
+                continue;
             }
+            int childLeft = getPaddingLeft();
+            int childRight = childLeft + child.getMeasuredWidth();
+            int childTop = top;
+            int childBottom = top + child.getMeasuredHeight();
+            child.layout(childLeft, childTop, childRight, childBottom);
+            top = childBottom + mDividerSize;
+            mTotalChildHeight += child.getMeasuredHeight() + mDividerSize;
         }
     }
 
@@ -194,15 +193,15 @@ public class CardFlow extends ViewGroup {
 
                 if (mTouchState == TOUCH_STATE_SCROLL) {
                     int diff = y - mLastY;
-                    int scrollY = getScrollY();
+                    int scrollY = mScrollDistance;
                     if (diff > 0) {
                         notifyScrollListener(true);
-                        if (overScrollBy(0, -diff, 0, getScrollY(), 0, getScrollRange(), 0, scrollY > diff ? mOverScrollRange : mOverscrollDistance, true)) {
+                        if (overScrollBy(0, -diff, 0, mScrollDistance, 0, getScrollRange(), 0, scrollY > diff ? mOverScrollRange : mOverscrollDistance, true)) {
                             mVelocityTracker.clear();
                         }
                     } else if (diff < 0) {
                         notifyScrollListener(false);
-                        if (overScrollBy(0, -diff, 0, getScrollY(), 0, getScrollRange(), 0, mOverScrollRange, true)) {
+                        if (overScrollBy(0, -diff, 0, mScrollDistance, 0, getScrollRange(), 0, mOverScrollRange, true)) {
                             mVelocityTracker.clear();
                         }
                     }
@@ -217,11 +216,11 @@ public class CardFlow extends ViewGroup {
                     int scrollRange = getScrollRange();
 
                     if (Math.abs(vy) > mMinFlingVelocity) {
-                        mScroller.fling(0, getScrollY(), 0, (int) -vy, 0, 0, 0, scrollRange, 0, mOverflingDistance);
+                        mScroller.fling(0, mScrollDistance, 0, (int) -vy, 0, 0, 0, scrollRange, 0, mOverflingDistance);
                         notifyScrollStateChangeListener(SCROLL_STATE_FLING);
                         invalidate();
                     } else {
-                        if (mScroller.springBack(0, getScrollY(), 0, 0, 0, scrollRange)) {
+                        if (mScroller.springBack(0, mScrollDistance, 0, 0, 0, scrollRange)) {
                             invalidate();
                         }
                         notifyScrollStateChangeListener(SCROLL_STATE_IDLE);
@@ -232,7 +231,7 @@ public class CardFlow extends ViewGroup {
                 break;
             case MotionEvent.ACTION_CANCEL:
                 if (mTouchState == TOUCH_STATE_SCROLL) {
-                    if (mScroller.springBack(0, getScrollY(), 0, 0, 0, getScrollRange())) {
+                    if (mScroller.springBack(0, mScrollDistance, 0, 0, 0, getScrollRange())) {
                         invalidate();
                     }
                     notifyScrollStateChangeListener(SCROLL_STATE_IDLE);
@@ -263,9 +262,9 @@ public class CardFlow extends ViewGroup {
     protected void onOverScrolled(int scrollX, int scrollY, boolean clampedX, boolean clampedY) {
         // Treat animating scrolls differently; see #computeScroll() for why.
         if (!mScroller.isFinished()) {
-            super.scrollTo(scrollX, scrollY);
+            scrollTo(scrollX, scrollY);
             if (clampedY) {
-                mScroller.springBack(getScrollX(), getScrollY(), 0, 0, 0, getScrollRange());
+                mScroller.springBack(getScrollX(), mScrollDistance, 0, 0, 0, getScrollRange());
             }
         } else {
             scrollTo(scrollX, scrollY);
@@ -278,8 +277,8 @@ public class CardFlow extends ViewGroup {
         if (mScroller.computeScrollOffset()) {
             int sy = mScroller.getCurrY();
 
-            if (sy != getScrollY()) {
-                notifyScrollListener(sy < getScrollY());
+            if (sy != mScrollDistance) {
+                notifyScrollListener(sy < mScrollDistance);
             }
 
             scrollTo(0, sy);
@@ -293,7 +292,7 @@ public class CardFlow extends ViewGroup {
 
     private void notifyScrollListener(boolean isUp) {
         if (mOnScrollListener != null) {
-            mOnScrollListener.onScroll(isUp ? SCROLL_STATE_TOUCH_SCROLL : SCROLL_STATE_FLING, getScrollY(), getScrollY() + getHeight());
+            mOnScrollListener.onScroll(isUp ? SCROLL_STATE_TOUCH_SCROLL : SCROLL_STATE_FLING, mScrollDistance, mScrollDistance + getHeight());
         }
     }
 
@@ -303,17 +302,13 @@ public class CardFlow extends ViewGroup {
         }
     }
 
+    private int mScrollDistance;
+
     @Override
     public void scrollTo(int x, int y) {
-        super.scrollTo(x, y);
-        int scrollRange = getScrollRange();
-        int lastOverScrollState = mOverScrollState;
-        if (y >= scrollRange) {
-            mOverScrollState = 1;
-        } else if (y > scrollRange) {
-            mOverScrollState = 0;
-        } else {
-            mOverScrollState = -1;
+        if (mScrollDistance != y) {
+            mScrollDistance = y;
+            requestLayout();
         }
     }
 
@@ -321,25 +316,16 @@ public class CardFlow extends ViewGroup {
         return Math.max(mTotalChildHeight - getHeight(), 0);
     }
 
-    public void removeViewWithoutRelayout(View child) {
-        removeViewInLayout(child);
-    }
-
-    public void addViewWithoutRelayout(View child) {
-        addViewInLayout(child, 0, child.getLayoutParams());
-    }
-
     public interface OnScrollListener {
-        public static int SCROLL_STATE_IDLE = 0;
-        public static int SCROLL_STATE_TOUCH_SCROLL = 1;
-        public static int SCROLL_STATE_FLING = 2;
+        int SCROLL_STATE_IDLE = 0;
+        int SCROLL_STATE_TOUCH_SCROLL = 1;
+        int SCROLL_STATE_FLING = 2;
 
-        public void onScrollStateChanged(int scrollState);
-        public void onScroll(int direction, int top, int bottom);
+        void onScrollStateChanged(int scrollState);
+        void onScroll(int direction, int top, int bottom);
     }
 
     public static class LayoutParams extends MarginLayoutParams {
-
         public LayoutParams(int width, int height) {
             super(width, height);
         }
