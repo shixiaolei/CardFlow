@@ -9,26 +9,26 @@ import android.widget.BaseAdapter;
 public class CardDelegateAdapter extends BaseAdapter {
 
     private Context mContext;
-    private BaseAdapter mAdapter;
+    private BaseAdapter mDelegated;
 
     public CardDelegateAdapter(Context context, BaseAdapter adapter) {
         mContext = context;
-        mAdapter = adapter;
+        mDelegated = adapter;
     }
 
     @Override
     public int getCount() {
-        return mAdapter.getCount();
+        return mDelegated.getCount();
     }
 
     @Override
     public Object getItem(int position) {
-        return mAdapter.getItem(position);
+        return mDelegated.getItem(position);
     }
 
     @Override
     public long getItemId(int position) {
-        return mAdapter.getItemId(position);
+        return mDelegated.getItemId(position);
     }
 
     @Override
@@ -37,7 +37,7 @@ public class CardDelegateAdapter extends BaseAdapter {
             convertView = LayoutInflater.from(mContext).inflate(R.layout.card, null);
         }
         Card card = (Card) convertView;
-        View content = mAdapter.getView(position, convertView, parent);
+        View content = mDelegated.getView(position, null, parent);
         card.setContent(content);
         return card;
     }

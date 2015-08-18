@@ -8,7 +8,11 @@
         android:id="@+id/card_flow"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginBottom="150dp"
-        android:layout_marginTop="150dp" />
+        android:layout_marginBottom="80dp"
+        android:layout_marginTop="80dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:cacheColorHint="@null"
+        android:listSelector="@null" />
 
 </FrameLayout>

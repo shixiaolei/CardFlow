@@ -17,7 +17,7 @@ public class CardActivity extends Activity {
         mCardFlow = (CardFlow) findViewById(R.id.card_flow);
         BaseAdapter baseAdapter = new ArrayAdapter<>(this, R.layout.content, mLabels);
         mAdapter = new CardDelegateAdapter(this, baseAdapter);
-        mCardFlow.setAdapter(baseAdapter);
+        mCardFlow.setAdapter(mAdapter);
     }
 
     private String[] mLabels = new String[] {
