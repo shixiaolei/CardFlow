@@ -2,7 +2,6 @@ package com.demo.card;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
@@ -66,7 +65,7 @@ public class CardFlow extends ViewGroup {
     public void setAdapter(ListAdapter adapter) {
         for (int i = 0; i < adapter.getCount(); i++) {
             View content = adapter.getView(i, null, null);
-            Card card = (Card) LayoutInflater.from(getContext()).inflate(R.layout.card, null);
+            Card card = new Card(getContext());
             card.addView(content);
             addView(card);
         }

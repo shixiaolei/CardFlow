@@ -1,7 +1,6 @@
 package com.demo.card;
 
 import android.content.Context;
-import android.util.AttributeSet;
 import android.view.View;
 import android.widget.FrameLayout;
 
@@ -14,10 +13,7 @@ public class Card extends FrameLayout {
 
     public Card(Context context) {
         super(context);
-    }
-
-    public Card(Context context, AttributeSet attrs) {
-        super(context, attrs);
+        setBackgroundResource(R.drawable.card_bg);
     }
 
     public void setContent(View content) {
