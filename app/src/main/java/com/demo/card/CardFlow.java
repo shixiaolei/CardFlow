@@ -14,6 +14,9 @@ import android.widget.OverScroller;
 
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+import static com.demo.card.CardFlow.OnScrollListener.SCROLL_STATE_FLING;
+import static com.demo.card.CardFlow.OnScrollListener.SCROLL_STATE_IDLE;
+import static com.demo.card.CardFlow.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL;
 
 public class CardFlow extends ViewGroup {
 
@@ -35,7 +38,6 @@ public class CardFlow extends ViewGroup {
 
     private int mOverScrollState = -1;
     private int mOverScrollRange;
-    private int mOverScrollRefreshThres;
 
     private boolean isUnableToDrag = false;
 
@@ -132,11 +134,11 @@ public class CardFlow extends ViewGroup {
                 isUnableToDrag = false;
                 if (mScroller.isFinished()) {
                     mTouchState = TOUCH_STATE_REST;
-                    notifyScrollStateChangeListener(OnScrollListener.SCROLL_STATE_IDLE);
+                    notifyScrollStateChangeListener(SCROLL_STATE_IDLE);
                 } else {
                     mScroller.abortAnimation();
                     mTouchState = TOUCH_STATE_SCROLL;
-                    notifyScrollStateChangeListener(OnScrollListener.SCROLL_STATE_TOUCH_SCROLL);
+                    notifyScrollStateChangeListener(SCROLL_STATE_TOUCH_SCROLL);
                     requestParentDisallowInterceptTouchEvent(true);
                 }
                 break;
@@ -145,7 +147,7 @@ public class CardFlow extends ViewGroup {
                 int diffX = (int) Math.abs(ev.getX() - mLastX);
                 if (diffY > mTouchSlop && diffY > diffX) {
                     mTouchState = TOUCH_STATE_SCROLL;
-                    notifyScrollStateChangeListener(OnScrollListener.SCROLL_STATE_TOUCH_SCROLL);
+                    notifyScrollStateChangeListener(SCROLL_STATE_TOUCH_SCROLL);
                     mLastY = (int) ev.getY();
                     requestParentDisallowInterceptTouchEvent(true);
                 } else if (diffX > mTouchSlop) {
@@ -154,7 +156,7 @@ public class CardFlow extends ViewGroup {
                 break;
             case MotionEvent.ACTION_CANCEL:
                 mTouchState = TOUCH_STATE_REST;
-                notifyScrollStateChangeListener(OnScrollListener.SCROLL_STATE_IDLE);
+                notifyScrollStateChangeListener(SCROLL_STATE_IDLE);
                 break;
         }
         return mTouchState != TOUCH_STATE_REST;
@@ -185,7 +187,7 @@ public class CardFlow extends ViewGroup {
                     int diffX = (int) Math.abs(event.getX() - mLastX);
                     if (diffY > mTouchSlop && diffY > diffX) {
                         mTouchState = TOUCH_STATE_SCROLL;
-                        notifyScrollStateChangeListener(OnScrollListener.SCROLL_STATE_TOUCH_SCROLL);
+                        notifyScrollStateChangeListener(SCROLL_STATE_TOUCH_SCROLL);
                         mLastY = y;
                         requestParentDisallowInterceptTouchEvent(true);
                     }
@@ -215,19 +217,15 @@ public class CardFlow extends ViewGroup {
                     float vy = tracker.getYVelocity();
                     int scrollRange = getScrollRange();
 
-                    if (mOverScrollState == 1) {
-                        scrollRange += mOverScrollRefreshThres;
-                    }
-
                     if (Math.abs(vy) > mMinFlingVelocity) {
                         mScroller.fling(0, getScrollY(), 0, (int) -vy, 0, 0, 0, scrollRange, 0, mOverflingDistance);
-                        notifyScrollStateChangeListener(OnScrollListener.SCROLL_STATE_FLING);
+                        notifyScrollStateChangeListener(SCROLL_STATE_FLING);
                         invalidate();
                     } else {
                         if (mScroller.springBack(0, getScrollY(), 0, 0, 0, scrollRange)) {
                             invalidate();
                         }
-                        notifyScrollStateChangeListener(OnScrollListener.SCROLL_STATE_IDLE);
+                        notifyScrollStateChangeListener(SCROLL_STATE_IDLE);
                     }
 
                 }
@@ -238,7 +236,7 @@ public class CardFlow extends ViewGroup {
                     if (mScroller.springBack(0, getScrollY(), 0, 0, 0, getScrollRange())) {
                         invalidate();
                     }
-                    notifyScrollStateChangeListener(OnScrollListener.SCROLL_STATE_IDLE);
+                    notifyScrollStateChangeListener(SCROLL_STATE_IDLE);
                 }
                 endTouch();
                 break;
@@ -283,9 +281,6 @@ public class CardFlow extends ViewGroup {
 
             if (sy != getScrollY()) {
                 notifyScrollListener(sy < getScrollY());
-                if (mOnScrollListener != null) {
-                    mOnScrollListener.onScroll(sy > getScrollY() ? 2 : 1, getScrollY(), getScrollY() + getHeight());
-                }
             }
 
             scrollTo(0, sy);
@@ -293,13 +288,13 @@ public class CardFlow extends ViewGroup {
             awakenScrollBars();
             postInvalidate();
         } else if (TOUCH_STATE_REST == mTouchState) {
-            notifyScrollStateChangeListener(OnScrollListener.SCROLL_STATE_IDLE);
+            notifyScrollStateChangeListener(SCROLL_STATE_IDLE);
         }
     }
 
     private void notifyScrollListener(boolean isUp) {
         if (mOnScrollListener != null) {
-            mOnScrollListener.onScroll(isUp ? 1 : 2, getScrollY(), getScrollY() + getHeight());
+            mOnScrollListener.onScroll(isUp ? SCROLL_STATE_TOUCH_SCROLL : SCROLL_STATE_FLING, getScrollY(), getScrollY() + getHeight());
         }
     }
 
@@ -314,7 +309,7 @@ public class CardFlow extends ViewGroup {
         super.scrollTo(x, y);
         int scrollRange = getScrollRange();
         int lastOverScrollState = mOverScrollState;
-        if (y >= scrollRange + mOverScrollRefreshThres) {
+        if (y >= scrollRange) {
             mOverScrollState = 1;
         } else if (y > scrollRange) {
             mOverScrollState = 0;
