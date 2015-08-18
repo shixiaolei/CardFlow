@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:background="#80555555">
 
-    <com.demo.card.CardFlow
+    <include
         android:id="@+id/card_flow"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -12,7 +12,6 @@
         android:layout_marginTop="80dp"
         android:layout_marginLeft="20dp"
         android:layout_marginRight="20dp"
-        android:cacheColorHint="@null"
-        android:listSelector="@null" />
+        layout="@layout/card_flow" />
 
 </FrameLayout>

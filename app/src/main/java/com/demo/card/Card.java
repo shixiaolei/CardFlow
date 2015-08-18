@@ -26,5 +26,4 @@ public class Card extends FrameLayout {
         addView(content);
     }
 
-
 }

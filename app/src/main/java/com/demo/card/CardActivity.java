@@ -8,7 +8,6 @@ import android.widget.BaseAdapter;
 public class CardActivity extends Activity {
 
     private CardFlow mCardFlow;
-    private CardDelegateAdapter mAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -16,8 +15,7 @@ public class CardActivity extends Activity {
         setContentView(R.layout.activity_card);
         mCardFlow = (CardFlow) findViewById(R.id.card_flow);
         BaseAdapter baseAdapter = new ArrayAdapter<>(this, R.layout.content, mLabels);
-        mAdapter = new CardDelegateAdapter(this, baseAdapter);
-        mCardFlow.setAdapter(mAdapter);
+        mCardFlow.setAdapter(baseAdapter);
     }
 
     private String[] mLabels = new String[] {
