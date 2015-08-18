@@ -4,8 +4,12 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ScrollView;
+
+import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
 public class CardFlow extends ScrollView {
 
@@ -30,12 +34,9 @@ public class CardFlow extends ScrollView {
             View content = adapter.getView(i, null, null);
             Card card = (Card) LayoutInflater.from(getContext()).inflate(R.layout.card, null);
             card.addView(content);
-            mCardList.addView(card);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+            lp.bottomMargin = Utils.dp2px(10);
+            mCardList.addView(card, lp);
         }
-    }
-
-    @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        super.onLayout(changed, l, t, r, b);
     }
 }
