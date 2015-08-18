@@ -30,8 +30,8 @@ public class CardFlow extends ViewGroup {
     private int mMaxFlingVelocity;
     private int mLastY, mLastX;
 
-    private int mOverscrollDistance;
-    private int mOverflingDistance;
+    private int mOverScrollDistance;
+    private int mOverFlingDistance;
 
     private int mDividerSize;
     private int mOverScrollRange;
@@ -52,8 +52,8 @@ public class CardFlow extends ViewGroup {
         mMinFlingVelocity = config.getScaledMinimumFlingVelocity();
         mMaxFlingVelocity = config.getScaledMaximumFlingVelocity();
 
-        mOverscrollDistance = 50;
-        mOverflingDistance = 50;
+        mOverScrollDistance = 50;
+        mOverFlingDistance = 50;
 
         mDividerSize = Utils.dp2px(15);
 
@@ -196,7 +196,7 @@ public class CardFlow extends ViewGroup {
                     int scrollY = mScrollDistance;
                     if (diff > 0) {
                         notifyScrollListener(true);
-                        if (overScrollBy(0, -diff, 0, mScrollDistance, 0, getScrollRange(), 0, scrollY > diff ? mOverScrollRange : mOverscrollDistance, true)) {
+                        if (overScrollBy(0, -diff, 0, mScrollDistance, 0, getScrollRange(), 0, scrollY > diff ? mOverScrollRange : mOverScrollDistance, true)) {
                             mVelocityTracker.clear();
                         }
                     } else if (diff < 0) {
@@ -216,7 +216,7 @@ public class CardFlow extends ViewGroup {
                     int scrollRange = getScrollRange();
 
                     if (Math.abs(vy) > mMinFlingVelocity) {
-                        mScroller.fling(0, mScrollDistance, 0, (int) -vy, 0, 0, 0, scrollRange, 0, mOverflingDistance);
+                        mScroller.fling(0, mScrollDistance, 0, (int) -vy, 0, 0, 0, scrollRange, 0, mOverFlingDistance);
                         notifyScrollStateChangeListener(SCROLL_STATE_FLING);
                         invalidate();
                     } else {
