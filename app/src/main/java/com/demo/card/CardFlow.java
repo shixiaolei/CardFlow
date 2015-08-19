@@ -37,8 +37,7 @@ public class CardFlow extends ViewGroup {
     private int mScrollDis;//相当于scrollView的scrollY，我们重写scrollTo并根据此值改变各卡片的高度、缩放和位置
 
     private int mDividerSize;
-    private int mExtraTop;//卡片流顶部预留的额外高度，用于露出“已经被叠到后面”的缩小后的卡片
-    private int mExtraHeight;//卡片流顶部预留的额外高度，用于露出“已经被叠到后面”的缩小后的卡片
+    private int mExtraBorder;//卡片流顶部预留的额外高度，用于露出“已经被叠到后面”的缩小后的卡片
 
     private int mTotalChildHeight = 0;
     private OnScrollListener mOnScrollListener;
@@ -59,8 +58,7 @@ public class CardFlow extends ViewGroup {
         mOverFlingDistance = 50;
 
         mDividerSize = Utils.dp2px(15);
-        mExtraTop = Utils.dp2px(20);
-        mExtraHeight = mExtraTop + Utils.dp2px(5);
+        mExtraBorder = Utils.dp2px(30);
 
         setOverScrollMode(OVER_SCROLL_ALWAYS);
         setChildrenDrawingOrderEnabled(true);
@@ -269,7 +267,7 @@ public class CardFlow extends ViewGroup {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        mTotalChildHeight = getPaddingTop() + mExtraTop; //各卡片完整高度(不考虑shrink)的叠加，作为滑动距离的依据
+        mTotalChildHeight = getPaddingTop() + mExtraBorder; //各卡片完整高度(不考虑shrink)的叠加，作为滑动距离的依据
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
             if (!ensureCard(child)) {
@@ -316,41 +314,41 @@ public class CardFlow extends ViewGroup {
         int bottom = lp.scrollBottom - mScrollDis;
         int parentHeight = getMeasuredHeight();
 
-        if (top >= mExtraTop && bottom <= parentHeight - mExtraTop) { //完全在边界内部的卡片
+        if (top >= mExtraBorder && bottom <= parentHeight - mExtraBorder) { //完全在边界内部的卡片
             lp.state = CardParams.STATE_FULL_IN;
             lp.displayHeight = card.getContentHeight();
             lp.displayTop = top;
             lp.scaleX = 1;
 
-        } else if (top < mExtraTop) {
-            if (bottom >= mExtraTop) { //上面滑动到一半的卡片，一半在边界内一半在边界外
+        } else if (top < mExtraBorder) {
+            if (bottom >= mExtraBorder) { //上面滑动到一半的卡片，一半在边界内一半在边界外
                 lp.state = CardParams.STATE_HALF_IN;
-                int start = mExtraTop + card.getContentHeight();
-                int end = mExtraTop;
-                lp.displayTop = (int) Utils.linearValue(start, mExtraTop, end, 0, bottom);
-                lp.displayHeight = (int) Utils.linearValue(start, card.getContentHeight(), end, mExtraHeight, bottom);
+                int start = mExtraBorder + card.getContentHeight();
+                int end = mExtraBorder;
+                lp.displayTop = (int) Utils.linearValue(start, mExtraBorder, end, 0, bottom);
+                lp.displayHeight = (int) Utils.linearValue(start, card.getContentHeight(), end, mExtraBorder, bottom);
                 lp.scaleX = Utils.linearValue(start, 1f, end, 0.9f, bottom);
 
             } else {//已经完全划上去的卡片，露出一个边
                 lp.state = CardParams.STATE_FULL_OUT;
                 lp.displayTop = 0;
-                lp.displayHeight = mExtraHeight;
+                lp.displayHeight = mExtraBorder;
                 lp.scaleX = 0.9f;
             }
 
-        } else if (bottom > parentHeight - mExtraTop) {
-            if (top < parentHeight - mExtraTop) { //下面滑动到一半的卡片，一半在边界内一半在边界外
+        } else if (bottom > parentHeight - mExtraBorder) {
+            if (top < parentHeight - mExtraBorder) { //下面滑动到一半的卡片，一半在边界内一半在边界外
                 lp.state = CardParams.STATE_HALF_IN;
-                int start = parentHeight - mExtraTop - card.getContentHeight();
-                int end = parentHeight - mExtraTop;
+                int start = parentHeight - mExtraBorder - card.getContentHeight();
+                int end = parentHeight - mExtraBorder;
                 lp.displayTop = top;
-                lp.displayHeight = (int) Utils.linearValue(start, card.getContentHeight(), end, mExtraHeight, top);
+                lp.displayHeight = (int) Utils.linearValue(start, card.getContentHeight(), end, mExtraBorder, top);
                 lp.scaleX = Utils.linearValue(start, 1f, end, 0.9f, top);
 
             } else {//已经完全划下去的卡片，露出一个边
                 lp.state = CardParams.STATE_FULL_OUT;
-                lp.displayTop = parentHeight - mExtraHeight;
-                lp.displayHeight = mExtraHeight;
+                lp.displayTop = parentHeight - mExtraBorder;
+                lp.displayHeight = mExtraBorder;
                 lp.scaleX = 0.9f;
             }
         }
@@ -463,9 +461,9 @@ public class CardFlow extends ViewGroup {
 
     public static class CardParams extends MarginLayoutParams {
 
-        private static final int STATE_FULL_IN = 0; //完全展开的状态(相当于listview里完全在边界内部的卡片)
-        private static final int STATE_HALF_IN = 1; // 压缩高度阶段（相当于listview里firstvisible的卡片，一半在边界里一半在边界外）
-        private static final int STATE_FULL_OUT = 2; // 折叠收起到后面阶段（相当于listview里完全滑出边界的卡片）
+        private static final int STATE_FULL_IN = 0; //相当于listview里完全在边界内部的卡片
+        private static final int STATE_HALF_IN = 1; //相当于listview里firstvisible的卡片，一半在边界里一半在边界外
+        private static final int STATE_FULL_OUT = 2; //相当于listview里完全滑出边界的卡片
 
         private int state = STATE_FULL_IN;
 
