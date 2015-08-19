@@ -378,17 +378,17 @@ public class CardFlow extends ViewGroup {
 
     public static class CardParams extends MarginLayoutParams {
 
-        static final int STATE_FULL_IN = 0; //完全展开的状态(相当于listview里完全在边界内部的卡片)
-        static final int STATE_HALF_IN = 1; // 压缩高度阶段（相当于listview里firstvisible的卡片，一半在边界里一半在边界外）
-        static final int STATE_FULL_OUT = 2; // 折叠收起到后面阶段（相当于listview里完全滑出边界的卡片）
+        private static final int STATE_FULL_IN = 0; //完全展开的状态(相当于listview里完全在边界内部的卡片)
+        private static final int STATE_HALF_IN = 1; // 压缩高度阶段（相当于listview里firstvisible的卡片，一半在边界里一半在边界外）
+        private static final int STATE_FULL_OUT = 2; // 折叠收起到后面阶段（相当于listview里完全滑出边界的卡片）
 
-        public int state = STATE_FULL_IN;
+        private int state = STATE_FULL_IN;
 
-        public int scrollTop;
-        public int scrollBottom;
-        public int shrinkHeight;
-        public int realTop;
-        public float scaleWidth = 1;
+        private int scrollTop;
+        private int scrollBottom;
+        private int shrinkHeight;
+        private int realTop;
+        private float scaleWidth = 1;
 
         public CardParams(int width, int height) {
             super(width, height);
