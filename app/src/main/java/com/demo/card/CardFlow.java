@@ -314,23 +314,23 @@ public class CardFlow extends ViewGroup {
         int bottom = lp.scrollBottom - mScrollDis;
 
         if (top >= 0) { //完全在边界内部的卡片
-            lp.state = CardParams.STATE_FULL;
+            lp.state = CardParams.STATE_FULL_IN;
             lp.shrinkHeight = card.getContentHeight();
             lp.realTop = lp.scrollTop - mScrollDis + mExtraTop;
             lp.scaleWidth = 1;
 
-        } else if (bottom > mShrinkHeight) { //上面的卡片，滑动过程中缩小高度直到mShrinkHeight（相当于listview里firstvisible的卡片，一半在边界里一半在边界外）
-            lp.state = CardParams.STATE_SHRINKING_HEIGHT;
+        } else if (bottom > mShrinkHeight) { //上面的卡片，滑动过程中缩小高度直到mShrinkHeight
+            lp.state = CardParams.STATE_HALF_IN;
             lp.realTop = mExtraTop;
             lp.shrinkHeight = bottom;
             lp.scaleWidth = 1;
 
-        } else { //已经划上去的卡片，露出一个边（相当于listview里完全滑出边界的卡片）
-            lp.state = CardParams.STATE_MOVE_BEHIND;
+        } else { //已经划上去的卡片，露出一个边
+            lp.state = CardParams.STATE_FULL_OUT;
             float ratio = Math.max(0,  (float) bottom / mShrinkHeight);
             lp.realTop = (int) (mExtraTop * ratio);
             lp.shrinkHeight = mShrinkHeight;
-            lp.scaleWidth = 0.8f + 0.2f * ratio;
+            lp.scaleWidth = 0.9f + 0.1f * ratio;
         }
     }
 
@@ -378,11 +378,11 @@ public class CardFlow extends ViewGroup {
 
     public static class CardParams extends MarginLayoutParams {
 
-        static final int STATE_MOVE_BEHIND = 0; // 折叠收起到后面阶段
-        static final int STATE_SHRINKING_HEIGHT = 1; // 压缩高度阶段
-        static final int STATE_FULL = 2; //完全展开的状态
+        static final int STATE_FULL_IN = 0; //完全展开的状态(相当于listview里完全在边界内部的卡片)
+        static final int STATE_HALF_IN = 1; // 压缩高度阶段（相当于listview里firstvisible的卡片，一半在边界里一半在边界外）
+        static final int STATE_FULL_OUT = 2; // 折叠收起到后面阶段（相当于listview里完全滑出边界的卡片）
 
-        public int state = STATE_FULL;
+        public int state = STATE_FULL_IN;
 
         public int scrollTop;
         public int scrollBottom;
