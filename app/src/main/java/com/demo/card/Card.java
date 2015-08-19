@@ -66,13 +66,14 @@ public class Card extends ViewGroup {
         measureChild(mContent, widthMeasureSpec, heightMeasureSpec);
         mContentHeight = mContent.getMeasuredHeight();
 
+        int width = getDefaultSize(getSuggestedMinimumWidth(), widthMeasureSpec);
         CardParams lp = (CardParams) getLayoutParams();
         if (lp.shrinkHeight > 0) {
-            setMeasuredDimension(getMeasuredWidth(), lp.shrinkHeight);
+            setMeasuredDimension(width, lp.shrinkHeight);
             int contentHeightSpec = MeasureSpec.makeMeasureSpec(lp.height, MeasureSpec.AT_MOST);
             measureChild(mContent, widthMeasureSpec, contentHeightSpec);
         } else {
-            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            setMeasuredDimension(width, getContentHeight());
         }
     }
 
