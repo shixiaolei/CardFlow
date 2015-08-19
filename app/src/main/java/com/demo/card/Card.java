@@ -75,6 +75,8 @@ public class Card extends ViewGroup {
         } else {
             setMeasuredDimension(width, getContentHeight());
         }
+
+        setPivotX(getMeasuredWidth() / 2);
     }
 
     @Override

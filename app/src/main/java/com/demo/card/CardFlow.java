@@ -58,9 +58,10 @@ public class CardFlow extends ViewGroup {
         mOverFlingDistance = 50;
 
         mDividerSize = Utils.dp2px(15);
-        mShrinkHeight = Utils.dp2px(80);
+        mShrinkHeight = Utils.dp2px(70);
 
         setOverScrollMode(OVER_SCROLL_ALWAYS);
+        setChildrenDrawingOrderEnabled(true);
     }
 
     public void setOnScrollListener(OnScrollListener onScrollListener) {
@@ -273,19 +274,25 @@ public class CardFlow extends ViewGroup {
             CardParams lp = (CardParams) card.getLayoutParams();
             int top = lp.scrollTop - mScrollDis;
             int bottom = lp.scrollBottom - mScrollDis;
-//            if (top >= 0) {
-//                lp.state = CardParams.STATE_FULL;
-//                lp.shrinkHeight = 0;
-//            } else if (bottom > mShrinkHeight) {
-//                lp.state = CardParams.STATE_SHRINKING_HEIGHT;
-//                lp.realTop = mExtraTop;
-//                lp.shrinkHeight = bottom;
-//            } else {
-//                lp.state = CardParams.STATE_MOVE_BEHIND;
-//                lp.realTop = 0;
-//                lp.shrinkHeight = mShrinkHeight;
-//            }
+
+            if (top >= 0) {
+                lp.state = CardParams.STATE_FULL;
+                lp.shrinkHeight = 0;
+
+            } else if (bottom > mShrinkHeight) {
+                lp.state = CardParams.STATE_SHRINKING_HEIGHT;
+                lp.realTop = mExtraTop;
+                lp.shrinkHeight = bottom;
+
+            } else {
+                lp.state = CardParams.STATE_MOVE_BEHIND;
+                float ratio = (float) bottom / mShrinkHeight;
+                lp.realTop = (int) (mExtraTop * ratio);
+                lp.shrinkHeight = mShrinkHeight;
+                card.setScaleX(0.8f + 0.2f * ratio);
+            }
         }
+
         requestLayout();
     }
 
@@ -311,6 +318,7 @@ public class CardFlow extends ViewGroup {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         int childTop = getPaddingTop() - mScrollDis; //各卡片实际高度(shrink以后)的叠加
+
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
             if (!ensureCard(child)) {
@@ -323,12 +331,14 @@ public class CardFlow extends ViewGroup {
 
             switch (lp.state) {
                 case CardParams.STATE_MOVE_BEHIND:
-                    child.layout(childLeft, 0, childRight, lp.shrinkHeight);
+                    child.layout(childLeft, lp.realTop, childRight, lp.realTop + lp.shrinkHeight);
                     break;
+
                 case CardParams.STATE_SHRINKING_HEIGHT:
-                    child.layout(childLeft, mExtraTop, childRight, mExtraTop + lp.shrinkHeight);
-                    childTop += lp.shrinkHeight + mDividerSize;
+                    child.layout(childLeft, lp.realTop, childRight, lp.realTop + lp.shrinkHeight);
+                    childTop = lp.realTop + lp.shrinkHeight + mDividerSize;
                     break;
+
                 case CardParams.STATE_FULL:
                     int childBottom = childTop + card.getMeasuredHeight();
                     child.layout(childLeft, childTop, childRight, childBottom);
@@ -336,6 +346,11 @@ public class CardFlow extends ViewGroup {
                     break;
             }
         }
+    }
+
+    @Override
+    protected int getChildDrawingOrder(int childCount, int i) {
+        return super.getChildDrawingOrder(childCount, i);
     }
 
     private boolean ensureCard(View child) {
