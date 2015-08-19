@@ -19,6 +19,24 @@ public class AdapterCardFlow extends CardFlow {
         super(context, attrs);
     }
 
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (mAdapter != null && mDataSetObserver == null) {
+            mDataSetObserver = new CardDataSetObserver();
+            mAdapter.registerDataSetObserver(mDataSetObserver);
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (mAdapter != null && mDataSetObserver != null) {
+            mAdapter.unregisterDataSetObserver(mDataSetObserver);
+            mDataSetObserver = null;
+        }
+    }
+
     public void setAdapter(ListAdapter adapter) {
         if (mAdapter != null && mDataSetObserver != null) {
             mAdapter.unregisterDataSetObserver(mDataSetObserver);

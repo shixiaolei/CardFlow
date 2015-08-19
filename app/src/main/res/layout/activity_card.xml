@@ -13,4 +13,11 @@
         android:layout_marginLeft="20dp"
         android:layout_marginRight="20dp" />
 
+    <Button
+        android:id="@+id/btn_refresh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|right"
+        android:text="刷新" />
+
 </FrameLayout>

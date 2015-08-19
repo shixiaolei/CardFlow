@@ -1,6 +1,7 @@
 package com.demo.card;
 
 import java.util.Arrays;
+import java.util.Random;
 
 public class Utils {
 
@@ -79,4 +80,11 @@ public class Utils {
         return true;
     }
 
+
+    private static final Random sRandom = new Random();
+
+    public static int random(int howsmall, int howbig) {
+        if (howsmall >= howbig) return howsmall;
+        return (int) (sRandom.nextFloat() * (howbig - howsmall) + howsmall);
+    }
 }
