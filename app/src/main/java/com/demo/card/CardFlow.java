@@ -450,6 +450,61 @@ public class CardFlow extends ViewGroup {
         requestLayout();
     }
 
+
+    @Override
+    public void addView(View child) {
+        ensureChild(child);
+        super.addView(child);
+    }
+
+    @Override
+    public void addView(View child, int index) {
+        ensureChild(child);
+        super.addView(child, index);
+    }
+
+    @Override
+    public void addView(View child, ViewGroup.LayoutParams params) {
+        ensureChild(child);
+        super.addView(child, params);
+    }
+
+    @Override
+    public void addView(View child, int index, ViewGroup.LayoutParams params) {
+        ensureChild(child);
+        super.addView(child, index, params);
+    }
+
+    @Override
+    protected boolean addViewInLayout(View child, int index, LayoutParams params) {
+        ensureChild(child);
+        return super.addViewInLayout(child, index, params);
+    }
+
+    @Override
+    protected boolean addViewInLayout(View child, int index, LayoutParams params, boolean preventRequestLayout) {
+        ensureChild(child);
+        return super.addViewInLayout(child, index, params, preventRequestLayout);
+    }
+
+    public void addCard(View body) {
+        Card card = new Card(getContext());
+        card.setContent(body);
+        addView(card);
+    }
+
+    public void addCardInLayout(View body, int index) {
+        Card card = new Card(getContext());
+        card.setContent(body);
+        addViewInLayout(card, index, generateDefaultLayoutParams());
+    }
+
+    private void ensureChild(View child) {
+        if (!(child instanceof Card)) {
+            throw new IllegalStateException("CardFlow only accept Card in addView(), use addCard() or addCardInLayout() instead.");
+        }
+    }
+
     public interface OnScrollListener {
         int SCROLL_STATE_IDLE = 0;
         int SCROLL_STATE_TOUCH_SCROLL = 1;

@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:background="#80555555">
 
-    <com.demo.card.CardFlow
+    <com.demo.card.AdapterCardFlow
         android:id="@+id/card_flow"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
