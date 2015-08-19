@@ -61,11 +61,17 @@ public class Card extends ViewGroup {
             return;
         }
 
-        measureChild(mContent, widthMeasureSpec, heightMeasureSpec);
+        int parentHeightSize = MeasureSpec.getSize(heightMeasureSpec);
+        int parentHeightMode = MeasureSpec.getMode(heightMeasureSpec);
+        if (parentHeightMode != MeasureSpec.AT_MOST && parentHeightMode != MeasureSpec.EXACTLY) {
+            throw new IllegalStateException("parentHeightMode should not be UNSPECIFIED.");
+        }
+        int childHeightSize = parentHeightSize / 2 - Utils.dp2px(50);
+        int childHeight = MeasureSpec.makeMeasureSpec(childHeightSize, MeasureSpec.AT_MOST);
+        measureChild(mContent, widthMeasureSpec, childHeight);
         mContentHeight = mContent.getMeasuredHeight();
         int width = getDefaultSize(getSuggestedMinimumWidth(), widthMeasureSpec);
         setMeasuredDimension(width, getContentHeight());
-        setPivotX(getMeasuredWidth() / 2);
     }
 
     @Override
