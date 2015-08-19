@@ -343,8 +343,8 @@ public class CardFlow extends ViewGroup {
                 lp.state = CardParams.STATE_HALF_IN;
                 int start = parentHeight - mExtraTop - card.getContentHeight();
                 int end = parentHeight - mExtraTop;
+                lp.displayTop = top;
                 lp.displayHeight = (int) Utils.linearValue(start, card.getContentHeight(), end, mExtraHeight, top);
-                lp.displayTop = parentHeight - lp.displayHeight;
                 lp.scaleX = Utils.linearValue(start, 1f, end, 0.9f, top);
 
             } else {//已经完全划下去的卡片，露出一个边
