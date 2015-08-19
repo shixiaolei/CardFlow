@@ -36,8 +36,8 @@ public class CardFlow extends ViewGroup {
     private int mScrollDis;//相当于scrollView的scrollY，我们重写scrollTo并根据此值改变各卡片的高度、缩放和位置
 
     private int mDividerSize;
-    private int mShrinkHeight;//当卡片本身高度小于此高度、或者高度压缩到此高度后；开始scale（层叠效果）
     private int mExtraTop;//卡片流顶部预留的额外高度，用于露出“已经被叠到后面”的缩小后的卡片
+    private int mExtraHeight;//卡片流顶部预留的额外高度，用于露出“已经被叠到后面”的缩小后的卡片
 
     private int mTotalChildHeight = 0;
     private OnScrollListener mOnScrollListener;
@@ -58,8 +58,8 @@ public class CardFlow extends ViewGroup {
         mOverFlingDistance = 50;
 
         mDividerSize = Utils.dp2px(15);
-        mShrinkHeight = Utils.dp2px(70);
         mExtraTop = Utils.dp2px(20);
+        mExtraHeight = mExtraTop + Utils.dp2px(5);
 
         setOverScrollMode(OVER_SCROLL_ALWAYS);
         setChildrenDrawingOrderEnabled(true);
@@ -297,13 +297,13 @@ public class CardFlow extends ViewGroup {
 
             int childLeft = getPaddingLeft();
             int childRight = childLeft + card.getMeasuredWidth();
-            if (lp.scaleWidth != 1) {
-                int scaleSize = (int) (card.getMeasuredWidth() * (1 - lp.scaleWidth) * 0.5f);
+            if (lp.scaleX != 1) {
+                int scaleSize = (int) (card.getMeasuredWidth() * (1 - lp.scaleX) * 0.5f);
                 childLeft += scaleSize;
                 childRight -= scaleSize;
             }
-            int childTop = lp.realTop;
-            int childBottom = lp.realTop + lp.shrinkHeight;
+            int childTop = lp.displayTop;
+            int childBottom = lp.displayTop + lp.displayHeight;
             child.layout(childLeft, childTop, childRight, childBottom);
         }
     }
@@ -313,25 +313,31 @@ public class CardFlow extends ViewGroup {
         int top = lp.scrollTop - mScrollDis;
         int bottom = lp.scrollBottom - mScrollDis;
 
-        if (top >= 0) { //完全在边界内部的卡片
+        if (top >= mExtraTop) { //完全在边界内部的卡片
             lp.state = CardParams.STATE_FULL_IN;
-            lp.shrinkHeight = card.getContentHeight();
-            lp.realTop = lp.scrollTop - mScrollDis + mExtraTop;
-            lp.scaleWidth = 1;
+            lp.displayHeight = card.getContentHeight();
+            lp.displayTop = top;
+            lp.scaleX = 1;
 
-        } else if (bottom > mShrinkHeight) { //上面的卡片，滑动过程中缩小高度直到mShrinkHeight
-            lp.state = CardParams.STATE_HALF_IN;
-            lp.realTop = mExtraTop;
-            lp.shrinkHeight = bottom;
-            lp.scaleWidth = 1;
+        } else {
+            if (bottom >= mExtraTop) { //上面滑动到一半的卡片，一半在边界内一半在边界外
+                lp.state = CardParams.STATE_HALF_IN;
+                int start = mExtraTop + card.getContentHeight();
+                int end = mExtraTop;
+                lp.displayTop = (int) Utils.linearValue(start, mExtraTop, end, 0, bottom);
+                lp.displayHeight = (int) Utils.linearValue(start, card.getContentHeight(), end, mExtraHeight, bottom);
+                lp.scaleX = Utils.linearValue(start, 1f, end, 0.9f, bottom);
 
-        } else { //已经划上去的卡片，露出一个边
-            lp.state = CardParams.STATE_FULL_OUT;
-            float ratio = Math.max(0,  (float) bottom / mShrinkHeight);
-            lp.realTop = (int) (mExtraTop * ratio);
-            lp.shrinkHeight = mShrinkHeight;
-            lp.scaleWidth = 0.9f + 0.1f * ratio;
+            } else {//已经完全划上去的卡片，露出一个边
+                lp.state = CardParams.STATE_FULL_OUT;
+                lp.displayTop = 0;
+                lp.displayHeight = mExtraTop;
+                lp.scaleX = 0.9f;
+            }
         }
+
+
+
     }
 
     @Override
@@ -386,9 +392,9 @@ public class CardFlow extends ViewGroup {
 
         private int scrollTop;
         private int scrollBottom;
-        private int shrinkHeight;
-        private int realTop;
-        private float scaleWidth = 1;
+        private int displayHeight;
+        private int displayTop;
+        private float scaleX = 1;
 
         public CardParams(int width, int height) {
             super(width, height);
