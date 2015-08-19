@@ -2,12 +2,14 @@ package com.demo.card;
 
 import android.content.Context;
 import android.view.View;
-import android.widget.FrameLayout;
+import android.view.ViewGroup;
+
+import com.demo.card.CardFlow.CardLayoutParams;
 
 /**
  * 单张卡片.
  */
-public class Card extends FrameLayout {
+public class Card extends ViewGroup {
 
     private View mContent;
 
@@ -25,11 +27,70 @@ public class Card extends FrameLayout {
     }
 
     @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        if (mContent != null) {
-            mContentHeight = mContent.getMeasuredHeight();
+    public void addView(View child) {
+        ensureChildrenCount();
+        super.addView(child);
+    }
+
+    @Override
+    public void addView(View child, int index) {
+        ensureChildrenCount();
+        super.addView(child, index);
+    }
+
+    @Override
+    public void addView(View child, ViewGroup.LayoutParams params) {
+        ensureChildrenCount();
+        super.addView(child, params);
+    }
+
+    @Override
+    public void addView(View child, int index, ViewGroup.LayoutParams params) {
+        ensureChildrenCount();
+        super.addView(child, index, params);
+    }
+
+    private void ensureChildrenCount() {
+        if (getChildCount() > 0) {
+            throw new IllegalStateException("Card can host only one direct child");
         }
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (mContent == null) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            return;
+        }
+
+        measureChild(mContent, widthMeasureSpec, heightMeasureSpec);
+        mContentHeight = mContent.getMeasuredHeight();
+
+        CardLayoutParams lp = (CardLayoutParams) getLayoutParams();
+        if (lp.shrinkHeight > 0) {
+            setMeasuredDimension(getMeasuredWidth(), lp.shrinkHeight);
+            int contentHeightSpec = MeasureSpec.makeMeasureSpec(lp.height, MeasureSpec.AT_MOST);
+            measureChild(mContent, widthMeasureSpec, contentHeightSpec);
+        } else {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        }
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        if (mContent == null) {
+            return;
+        }
+
+        int parentLeft = getPaddingLeft();
+        int parentRight = r - l - getPaddingRight();
+        int parentTop = getPaddingTop();
+        int parentBottom = b - t - getPaddingBottom();
+        int childWidth = mContent.getMeasuredWidth();
+        int childHeight = mContent.getMeasuredHeight();
+        int childTop = parentTop + (parentBottom - parentTop - childHeight) / 2;
+        int childLeft = parentLeft + (parentRight - parentLeft - childWidth) / 2;
+        mContent.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
     }
 
     public int getContentHeight() {

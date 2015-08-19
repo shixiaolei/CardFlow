@@ -29,15 +29,13 @@ public class CardFlow extends ViewGroup {
     private int mMinFlingVelocity;
     private int mMaxFlingVelocity;
     private int mLastY, mLastX;
-
     private int mOverScrollDistance;
     private int mOverFlingDistance;
-
-    private int mDividerSize;
     private int mOverScrollRange;
-
     private boolean isUnableToDrag = false;
 
+    private int mDividerSize;
+    private int mTotalChildHeight = 0;
     private OnScrollListener mOnScrollListener;
 
     public CardFlow(Context context) {
@@ -60,15 +58,6 @@ public class CardFlow extends ViewGroup {
         setOverScrollMode(OVER_SCROLL_ALWAYS);
     }
 
-    public void setAdapter(ListAdapter adapter) {
-        for (int i = 0; i < adapter.getCount(); i++) {
-            View content = adapter.getView(i, null, null);
-            Card card = new Card(getContext());
-            card.setContent(content);
-            addView(card);
-        }
-    }
-
     public void setOnScrollListener(OnScrollListener onScrollListener) {
         this.mOnScrollListener = onScrollListener;
     }
@@ -83,8 +72,6 @@ public class CardFlow extends ViewGroup {
         measureChildren(widthMeasureSpec, heightMeasureSpec);
     }
 
-    private int mTotalChildHeight = 0;
-
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         int count = getChildCount();
@@ -98,11 +85,11 @@ public class CardFlow extends ViewGroup {
             if (!(child instanceof Card)) {
                 return;
             }
-            if (!(child.getLayoutParams() instanceof LayoutParams)) {
+            if (!(child.getLayoutParams() instanceof CardLayoutParams)) {
                 return;
             }
             Card card = (Card) child;
-            LayoutParams lp = (LayoutParams) child.getLayoutParams();
+            CardLayoutParams lp = (CardLayoutParams) child.getLayoutParams();
             int childLeft = getPaddingLeft();
             int childRight = childLeft + card.getMeasuredWidth();
             int childTop = top;
@@ -110,19 +97,19 @@ public class CardFlow extends ViewGroup {
             child.layout(childLeft, childTop, childRight, childBottom);
             top = childBottom + mDividerSize;
             mTotalChildHeight += card.getContentHeight() + mDividerSize;
-            lp.realTop = childTop;
-            lp.realBottom = childBottom;
+            lp.scrollTop = childTop;
+            lp.scrollBottom = childBottom;
         }
     }
 
     @Override
     protected ViewGroup.LayoutParams generateDefaultLayoutParams() {
-        return new LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+        return new CardLayoutParams(MATCH_PARENT, WRAP_CONTENT);
     }
 
     @Override
     protected boolean checkLayoutParams(ViewGroup.LayoutParams p) {
-        return p instanceof LayoutParams;
+        return p instanceof CardLayoutParams;
     }
 
     @Override
@@ -288,7 +275,6 @@ public class CardFlow extends ViewGroup {
             if (sy != mScrollDistance) {
                 notifyScrollListener(sy < mScrollDistance);
             }
-
             scrollTo(0, sy);
 
             awakenScrollBars();
@@ -300,7 +286,8 @@ public class CardFlow extends ViewGroup {
 
     private void notifyScrollListener(boolean isUp) {
         if (mOnScrollListener != null) {
-            mOnScrollListener.onScroll(isUp ? SCROLL_STATE_TOUCH_SCROLL : SCROLL_STATE_FLING, mScrollDistance, mScrollDistance + getHeight());
+            int state = isUp ? SCROLL_STATE_TOUCH_SCROLL : SCROLL_STATE_FLING;
+            mOnScrollListener.onScroll(state, mScrollDistance, mScrollDistance + getHeight());
         }
     }
 
@@ -314,14 +301,25 @@ public class CardFlow extends ViewGroup {
 
     @Override
     public void scrollTo(int x, int y) {
-        if (mScrollDistance != y) {
-            mScrollDistance = y;
-            requestLayout();
+        if (mScrollDistance == y) {
+            return;
         }
+        mScrollDistance = y;
+        requestLayout();
     }
 
     private int getScrollRange() {
         return Math.max(mTotalChildHeight - getHeight(), 0);
+    }
+
+    public void setAdapter(ListAdapter adapter) {
+        for (int i = 0; i < adapter.getCount(); i++) {
+            View content = adapter.getView(i, null, null);
+            Card card = new Card(getContext());
+            card.setContent(content);
+            addViewInLayout(card, i, generateDefaultLayoutParams());
+        }
+        requestLayout();
     }
 
     public interface OnScrollListener {
@@ -333,11 +331,13 @@ public class CardFlow extends ViewGroup {
         void onScroll(int direction, int top, int bottom);
     }
 
-    public static class LayoutParams extends MarginLayoutParams {
-        private int realTop;
-        private int realBottom;
+    public static class CardLayoutParams extends MarginLayoutParams {
 
-        public LayoutParams(int width, int height) {
+        public int scrollTop;
+        public int scrollBottom;
+        public int shrinkHeight;
+
+        public CardLayoutParams(int width, int height) {
             super(width, height);
         }
     }
