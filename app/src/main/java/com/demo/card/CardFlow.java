@@ -261,38 +261,6 @@ public class CardFlow extends ViewGroup {
             return;
         }
         mScrollDis = y;
-        onScroll();
-    }
-
-    private void onScroll() {
-        for (int i = 0; i < getChildCount(); i++) {
-            View child = getChildAt(i);
-            if (!ensureCard(child)) {
-                continue;
-            }
-            Card card = (Card) child;
-            CardParams lp = (CardParams) card.getLayoutParams();
-            int top = lp.scrollTop - mScrollDis;
-            int bottom = lp.scrollBottom - mScrollDis;
-
-            if (top >= 0) {
-                lp.state = CardParams.STATE_FULL;
-                lp.shrinkHeight = 0;
-
-            } else if (bottom > mShrinkHeight) {
-                lp.state = CardParams.STATE_SHRINKING_HEIGHT;
-                lp.realTop = mExtraTop;
-                lp.shrinkHeight = bottom;
-
-            } else {
-                lp.state = CardParams.STATE_MOVE_BEHIND;
-                float ratio = (float) bottom / mShrinkHeight;
-                lp.realTop = (int) (mExtraTop * ratio);
-                lp.shrinkHeight = mShrinkHeight;
-                card.setScaleX(0.8f + 0.2f * ratio);
-            }
-        }
-
         requestLayout();
     }
 
@@ -317,8 +285,6 @@ public class CardFlow extends ViewGroup {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        int childTop = getPaddingTop() - mScrollDis; //各卡片实际高度(shrink以后)的叠加
-
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
             if (!ensureCard(child)) {
@@ -326,25 +292,37 @@ public class CardFlow extends ViewGroup {
             }
             Card card = (Card) child;
             CardParams lp = (CardParams) child.getLayoutParams();
+            prepareLayout(card);
+
             int childLeft = getPaddingLeft();
             int childRight = childLeft + card.getMeasuredWidth();
+            int childTop = lp.realTop;
+            int childBottom = lp.realTop + lp.shrinkHeight;
+            child.layout(childLeft, childTop, childRight, childBottom);
+        }
+    }
 
-            switch (lp.state) {
-                case CardParams.STATE_MOVE_BEHIND:
-                    child.layout(childLeft, lp.realTop, childRight, lp.realTop + lp.shrinkHeight);
-                    break;
+    private void prepareLayout(Card card) {
+        CardParams lp = (CardParams) card.getLayoutParams();
+        int top = lp.scrollTop - mScrollDis;
+        int bottom = lp.scrollBottom - mScrollDis;
 
-                case CardParams.STATE_SHRINKING_HEIGHT:
-                    child.layout(childLeft, lp.realTop, childRight, lp.realTop + lp.shrinkHeight);
-                    childTop = lp.realTop + lp.shrinkHeight + mDividerSize;
-                    break;
+        if (top >= 0) { //完全在边界内部的卡片
+            lp.state = CardParams.STATE_FULL;
+            lp.shrinkHeight = card.getContentHeight();
+            lp.realTop = lp.scrollTop - mScrollDis + mExtraTop;
 
-                case CardParams.STATE_FULL:
-                    int childBottom = childTop + card.getMeasuredHeight();
-                    child.layout(childLeft, childTop, childRight, childBottom);
-                    childTop = childBottom + mDividerSize;
-                    break;
-            }
+        } else if (bottom > mShrinkHeight) { //上面的卡片，滑动过程中缩小高度直到mShrinkHeight（相当于listview里firstvisible的卡片，一半在边界里一半在边界外）
+            lp.state = CardParams.STATE_SHRINKING_HEIGHT;
+            lp.realTop = mExtraTop;
+            lp.shrinkHeight = bottom;
+
+        } else { //已经划上去的卡片，露出一个边（相当于listview里完全滑出边界的卡片）
+            lp.state = CardParams.STATE_MOVE_BEHIND;
+            float ratio = (float) bottom / mShrinkHeight;
+            lp.realTop = (int) (mExtraTop * ratio);
+            lp.shrinkHeight = mShrinkHeight;
+            card.setScaleX(0.8f + 0.2f * ratio);
         }
     }
 
