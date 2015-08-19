@@ -416,7 +416,7 @@ public class CardFlow extends ViewGroup {
         if (lp.willDraw || true) {
             return super.drawChild(canvas, child, drawingTime);
         }
-        return true;
+        return false;
     }
 
     @Override
