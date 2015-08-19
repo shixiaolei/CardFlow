@@ -59,6 +59,7 @@ public class CardFlow extends ViewGroup {
 
         mDividerSize = Utils.dp2px(15);
         mShrinkHeight = Utils.dp2px(70);
+        mExtraTop = Utils.dp2px(20);
 
         setOverScrollMode(OVER_SCROLL_ALWAYS);
         setChildrenDrawingOrderEnabled(true);
@@ -296,6 +297,11 @@ public class CardFlow extends ViewGroup {
 
             int childLeft = getPaddingLeft();
             int childRight = childLeft + card.getMeasuredWidth();
+            if (lp.scaleWidth != 1) {
+                int scaleSize = (int) (card.getMeasuredWidth() * (1 - lp.scaleWidth) * 0.5f);
+                childLeft += scaleSize;
+                childRight -= scaleSize;
+            }
             int childTop = lp.realTop;
             int childBottom = lp.realTop + lp.shrinkHeight;
             child.layout(childLeft, childTop, childRight, childBottom);
@@ -311,18 +317,20 @@ public class CardFlow extends ViewGroup {
             lp.state = CardParams.STATE_FULL;
             lp.shrinkHeight = card.getContentHeight();
             lp.realTop = lp.scrollTop - mScrollDis + mExtraTop;
+            lp.scaleWidth = 1;
 
         } else if (bottom > mShrinkHeight) { //上面的卡片，滑动过程中缩小高度直到mShrinkHeight（相当于listview里firstvisible的卡片，一半在边界里一半在边界外）
             lp.state = CardParams.STATE_SHRINKING_HEIGHT;
             lp.realTop = mExtraTop;
             lp.shrinkHeight = bottom;
+            lp.scaleWidth = 1;
 
         } else { //已经划上去的卡片，露出一个边（相当于listview里完全滑出边界的卡片）
             lp.state = CardParams.STATE_MOVE_BEHIND;
-            float ratio = (float) bottom / mShrinkHeight;
+            float ratio = Math.max(0,  (float) bottom / mShrinkHeight);
             lp.realTop = (int) (mExtraTop * ratio);
             lp.shrinkHeight = mShrinkHeight;
-            card.setScaleX(0.8f + 0.2f * ratio);
+            lp.scaleWidth = 0.8f + 0.2f * ratio;
         }
     }
 
@@ -374,11 +382,13 @@ public class CardFlow extends ViewGroup {
         static final int STATE_SHRINKING_HEIGHT = 1; // 压缩高度阶段
         static final int STATE_FULL = 2; //完全展开的状态
 
+        public int state = STATE_FULL;
+
         public int scrollTop;
         public int scrollBottom;
         public int shrinkHeight;
         public int realTop;
-        public int state = STATE_FULL;
+        public float scaleWidth = 1;
 
         public CardParams(int width, int height) {
             super(width, height);
