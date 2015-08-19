@@ -1,6 +1,7 @@
 package com.demo.card;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -368,6 +369,7 @@ public class CardFlow extends ViewGroup {
         for (int i = 0; i < childCount; i++) {
             CardParams lp = (CardParams) getChildAt(i).getLayoutParams();
             if (lp.state != CardParams.STATE_FULL_OUT) {
+                lp.willDraw = true;
                 if (first == -1) {
                     first = i;
                 }
@@ -379,11 +381,15 @@ public class CardFlow extends ViewGroup {
         first--;
         if (first >= 0) {
             temp[index++] = first;
+            CardParams lp = (CardParams) getChildAt(first).getLayoutParams();
+            lp.willDraw = true;
             first--;
         }
         last++;
         if (last < childCount - 1) {
             temp[index++] = last;
+            CardParams lp = (CardParams) getChildAt(last).getLayoutParams();
+            lp.willDraw = true;
             last++;
         }
 
@@ -402,6 +408,15 @@ public class CardFlow extends ViewGroup {
         for (int i = 0; i < childCount; i++) {
             mDrawingOrder[childCount - 1 - i] = temp[i];
         }
+    }
+
+    @Override
+    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        CardParams lp = (CardParams) child.getLayoutParams();
+        if (lp.willDraw || true) {
+            return super.drawChild(canvas, child, drawingTime);
+        }
+        return true;
     }
 
     @Override
@@ -459,6 +474,7 @@ public class CardFlow extends ViewGroup {
         private int displayHeight;
         private int displayTop;
         private float scaleX = 1;
+        private boolean willDraw = true;
 
         public CardParams(int width, int height) {
             super(width, height);
