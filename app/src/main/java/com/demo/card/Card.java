@@ -4,7 +4,7 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.demo.card.CardFlow.CardLayoutParams;
+import com.demo.card.CardFlow.CardParams;
 
 /**
  * 单张卡片.
@@ -66,7 +66,7 @@ public class Card extends ViewGroup {
         measureChild(mContent, widthMeasureSpec, heightMeasureSpec);
         mContentHeight = mContent.getMeasuredHeight();
 
-        CardLayoutParams lp = (CardLayoutParams) getLayoutParams();
+        CardParams lp = (CardParams) getLayoutParams();
         if (lp.shrinkHeight > 0) {
             setMeasuredDimension(getMeasuredWidth(), lp.shrinkHeight);
             int contentHeightSpec = MeasureSpec.makeMeasureSpec(lp.height, MeasureSpec.AT_MOST);
