@@ -1,5 +1,7 @@
 package com.demo.card;
 
+import java.util.Arrays;
+
 public class Utils {
 
     public static int dp2px(int dp) {
@@ -33,6 +35,48 @@ public class Utils {
             return y0;
         }
         throw new IllegalArgumentException("x0 == x1, y0 != y1");
+    }
+
+
+    /**
+     * 把数组的内容和下标互换，例如输入[1, 3, 4, 0, 2], 返回[3, 0, 4, 1, 2]
+     */
+    public static int[] getReversedArray(int[] input) {
+        if (!(isArrayInRange(input))) {
+            return null;
+        }
+        int[] output = new int[input.length];
+        for (int i = 0; i < input.length; i++) {
+            int index = input[i];
+            output[index] = i;
+        }
+        return output;
+    }
+
+    /**
+     * 检查一个长度为length的数组，是否元素为0到length-1，且每个数组有且只有一个.
+     */
+    public static boolean isArrayInRange(int[] input) {
+        if (input == null) {
+            return false;
+        }
+        if (input.length == 0) {
+            return true;
+        }
+        int[] counter = new int[input.length];
+        Arrays.fill(counter, 0);
+        for (int num : input) {
+            if (num < 0 || num >= input.length) {
+                return false;
+            }
+            counter[num] = counter[num] + 1;
+        }
+        for (int num : counter) {
+            if (num != 1) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }

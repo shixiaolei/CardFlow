@@ -306,20 +306,22 @@ public class CardFlow extends ViewGroup {
             int childBottom = lp.displayTop + lp.displayHeight;
             child.layout(childLeft, childTop, childRight, childBottom);
         }
+        resetChildDrawingOrder();
     }
 
     private void prepareLayout(Card card) {
         CardParams lp = (CardParams) card.getLayoutParams();
         int top = lp.scrollTop - mScrollDis;
         int bottom = lp.scrollBottom - mScrollDis;
+        int parentHeight = getMeasuredHeight();
 
-        if (top >= mExtraTop) { //完全在边界内部的卡片
+        if (top >= mExtraTop && bottom <= parentHeight - mExtraTop) { //完全在边界内部的卡片
             lp.state = CardParams.STATE_FULL_IN;
             lp.displayHeight = card.getContentHeight();
             lp.displayTop = top;
             lp.scaleX = 1;
 
-        } else {
+        } else if (top < mExtraTop) {
             if (bottom >= mExtraTop) { //上面滑动到一半的卡片，一半在边界内一半在边界外
                 lp.state = CardParams.STATE_HALF_IN;
                 int start = mExtraTop + card.getContentHeight();
@@ -331,22 +333,84 @@ public class CardFlow extends ViewGroup {
             } else {//已经完全划上去的卡片，露出一个边
                 lp.state = CardParams.STATE_FULL_OUT;
                 lp.displayTop = 0;
-                lp.displayHeight = mExtraTop;
+                lp.displayHeight = mExtraHeight;
+                lp.scaleX = 0.9f;
+            }
+
+        } else if (bottom > parentHeight - mExtraTop) {
+            if (top < parentHeight - mExtraTop) { //下面滑动到一半的卡片，一半在边界内一半在边界外
+                lp.state = CardParams.STATE_HALF_IN;
+                int start = parentHeight - mExtraTop - card.getContentHeight();
+                int end = parentHeight - mExtraTop;
+                lp.displayHeight = (int) Utils.linearValue(start, card.getContentHeight(), end, mExtraHeight, top);
+                lp.displayTop = parentHeight - lp.displayHeight;
+                lp.scaleX = Utils.linearValue(start, 1f, end, 0.9f, top);
+
+            } else {//已经完全划下去的卡片，露出一个边
+                lp.state = CardParams.STATE_FULL_OUT;
+                lp.displayTop = parentHeight - mExtraHeight;
+                lp.displayHeight = mExtraHeight;
                 lp.scaleX = 0.9f;
             }
         }
+    }
 
+    private int[] mDrawingOrder;
 
+    private void resetChildDrawingOrder() {
+        int childCount = getChildCount();
 
+        int[] temp = new int[childCount];
+        int first = -1;
+        int last = -1;
+        int index = 0;
+
+        for (int i = 0; i < childCount; i++) {
+            CardParams lp = (CardParams) getChildAt(i).getLayoutParams();
+            if (lp.state != CardParams.STATE_FULL_OUT) {
+                if (first == -1) {
+                    first = i;
+                }
+                last = i;
+                temp[index++] = i;
+            }
+        }
+
+        first--;
+        if (first >= 0) {
+            temp[index++] = first;
+            first--;
+        }
+        last++;
+        if (last < childCount - 1) {
+            temp[index++] = last;
+            last++;
+        }
+
+        if (first > 0) {
+            for (int i = first; i >=0; i--) {
+                temp[index++] = i;
+            }
+        }
+        if (last < childCount - 1) {
+            for (int i = last; i <= childCount - 1; i++) {
+                temp[index++] = i;
+            }
+        }
+
+        mDrawingOrder = new int[childCount];
+        for (int i = 0; i < childCount; i++) {
+            mDrawingOrder[childCount - 1 - i] = temp[i];
+        }
     }
 
     @Override
     protected int getChildDrawingOrder(int childCount, int i) {
-        return super.getChildDrawingOrder(childCount, i);
+        return mDrawingOrder != null ? mDrawingOrder[i] : super.getChildDrawingOrder(childCount, i);
     }
 
     private boolean ensureCard(View child) {
-        return  child.getVisibility() != GONE && (child instanceof Card) && (child.getLayoutParams() instanceof CardParams);
+        return child.getVisibility() != GONE && (child instanceof Card) && (child.getLayoutParams() instanceof CardParams);
     }
 
     @Override
