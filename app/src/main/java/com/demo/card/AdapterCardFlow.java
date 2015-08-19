@@ -1,11 +1,15 @@
 package com.demo.card;
 
 import android.content.Context;
+import android.database.DataSetObserver;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.ListAdapter;
 
 public class AdapterCardFlow extends CardFlow {
+
+    private ListAdapter mAdapter;
+    private CardDataSetObserver mDataSetObserver;
 
     public AdapterCardFlow(Context context) {
         super(context);
@@ -16,10 +20,31 @@ public class AdapterCardFlow extends CardFlow {
     }
 
     public void setAdapter(ListAdapter adapter) {
-        for (int i = 0; i < adapter.getCount(); i++) {
-            View content = adapter.getView(i, null, null);
+        if (mAdapter != null && mDataSetObserver != null) {
+            mAdapter.unregisterDataSetObserver(mDataSetObserver);
+        }
+        mAdapter = adapter;
+
+        if (mAdapter != null) {
+            mDataSetObserver = new CardDataSetObserver();
+            mAdapter.registerDataSetObserver(mDataSetObserver);
+        }
+        reloadData();
+    }
+
+    private void reloadData() {
+        removeAllViewsInLayout();
+        for (int i = 0; i < mAdapter.getCount(); i++) {
+            View content = mAdapter.getView(i, null, null);
             addCardInLayout(content, i);
         }
         requestLayout();
+    }
+
+    private class CardDataSetObserver extends DataSetObserver {
+        @Override
+        public void onChanged() {
+            reloadData();
+        }
     }
 }
