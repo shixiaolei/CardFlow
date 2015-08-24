@@ -1,11 +1,17 @@
 package com.demo.card;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.content.Context;
+import android.os.Build;
+import android.view.ViewPropertyAnimator;
+
 import java.util.Arrays;
 import java.util.Random;
 
 public class Utils {
 
-    public static int dp2px(int dp) {
+    public static int dip2px(Context context, int dp) {
         return (int) (App.res().getDisplayMetrics().density * dp + 0.5f);
     }
 
@@ -86,5 +92,30 @@ public class Utils {
     public static int random(int howsmall, int howbig) {
         if (howsmall >= howbig) return howsmall;
         return (int) (sRandom.nextFloat() * (howbig - howsmall) + howsmall);
+    }
+
+    public static float constrain(float amount, float low, float high) {
+        return amount < low ? low : (amount > high ? high : amount);
+    }
+
+    public static void setAnimatorEndAction(ViewPropertyAnimator animator, final Runnable endAction) {
+        if (animator == null) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            animator.withEndAction(null != endAction ? new Runnable() {
+                @Override
+                public void run() {
+                    endAction.run();
+                }
+            } : null);
+        } else {
+            animator.setListener(null != endAction ? new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    endAction.run();
+                }
+            } : null);
+        }
     }
 }

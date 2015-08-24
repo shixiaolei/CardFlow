@@ -11,14 +11,14 @@ import android.widget.TextView;
 
 public class CardActivity extends Activity implements View.OnClickListener {
 
-    private AdapterCardFlow mCardFlow;
+    private CardFlow mCardFlow;
     private Button mBtn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_card);
-        mCardFlow = (AdapterCardFlow) findViewById(R.id.card_flow);
+        mCardFlow = (CardFlow) findViewById(R.id.card_flow);
         mBtn = (Button) findViewById(R.id.btn_refresh);
         mBtn.setOnClickListener(this);
         mCardFlow.setAdapter(mAdapter);
