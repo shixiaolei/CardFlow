@@ -37,15 +37,15 @@ public class CardActivity extends Activity implements View.OnClickListener {
     }
 
     private String[] genLabels() {
-        int count = Utils.random(8, 20);
-        String[] result = new String[count];
-        for (int i = 0; i < count; i++) {
+        int cardCount = Utils.random(2, 5);
+        String[] result = new String[cardCount];
+        for (int i = 0; i < cardCount; i++) {
             char c = (char) ('a' + i);
-            int line = Utils.random(1, 7);
+            int lineCount = Utils.random(1, 8);
             String s = "";
-            for (int j = 0; j < line; j++) {
-                int repeat = Utils.random(1, 5);
-                for (int k = 0; k < repeat; k++) {
+            for (int j = 0; j < lineCount; j++) {
+                int charCount = Utils.random(1, 5);
+                for (int k = 0; k < charCount; k++) {
                     s += c;
                 }
                 s += "\n";

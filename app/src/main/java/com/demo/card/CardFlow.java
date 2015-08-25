@@ -390,7 +390,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
             lp.scrollBottom = mTotalChildHeight + cardHeight;
             mTotalChildHeight = lp.scrollBottom + mDividerSize;
 
-            if (cardHeight > 0 && mMinCardHeight > cardHeight) {
+            if (cardHeight > 0 && cardHeight < mMinCardHeight) {
                 mMinCardHeight = cardHeight;
             }
         }
@@ -454,6 +454,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
                 lp.displayHeight = mExtraBorder;
             }
         }
+        card.invalidate();
     }
 
     private int[] mDrawingOrder;
