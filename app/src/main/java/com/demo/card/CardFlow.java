@@ -3,7 +3,6 @@ package com.demo.card;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.graphics.Canvas;
-import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -59,7 +58,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
     private OnClickListener mOnClickOnBlankListener;
     private long mLastClickTime;
     private Card mLastClickCard;
-    private Drawable mCardBg;
+    private int mCardBgRes;
     private float mCardMaxHeightRatio;
 
     public CardFlow(Context context) {
@@ -80,7 +79,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
 
         mDividerSize = Utils.dip2px(getContext(), 4);
         mExtraBorder = Utils.dip2px(getContext(), 30);
-        mCardBg = getResources().getDrawable(R.drawable.notification_card_bg);
+        mCardBgRes = R.drawable.notification_card_bg;
         mCardMaxHeightRatio = 0.85f;
 
         setOverScrollMode(OVER_SCROLL_ALWAYS);
@@ -99,8 +98,8 @@ public class CardFlow extends AdapterView<ListAdapter> {
         mOnClickOnBlankListener = listener;
     }
 
-    public void setCardBg(Drawable bg) {
-        mCardBg = bg;
+    public void setCardBgRes(int bg) {
+        mCardBgRes = bg;
     }
 
     public void setCardMaxHeightRatio(float ratio) {
@@ -791,8 +790,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
 
         private void setContent(View content) {
             mContent = content;
-            setBackgroundDrawable(mCardBg);
-//            setBackgroundColor(0x8000ff00);
+            setBackgroundDrawable(getResources().getDrawable(mCardBgRes));
             removeAllViewsInLayout();
             addView(content);
         }
