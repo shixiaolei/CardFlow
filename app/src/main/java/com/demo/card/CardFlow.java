@@ -466,53 +466,30 @@ public class CardFlow extends AdapterView<ListAdapter> {
         int childCount = getChildCount();
 
         int[] temp = new int[childCount];
-        int first = -1;
-        int last = -1;
         int index = 0;
 
         for (int i = 0; i < childCount; i++) {
             CardParams lp = (CardParams) getChildAt(i).getLayoutParams();
-            lp.willDraw = false;
-            if (lp.state != CardParams.STATE_FULL_OUT) {
-                lp.willDraw = true;
-                if (first == -1) {
-                    first = i;
-                }
-                last = i;
+            if (lp.state == CardParams.STATE_FULL_OUT) {
+                lp.willDraw = false;
                 temp[index++] = i;
             }
         }
-
-        first--;
-        if (first >= 0) {
-            temp[index++] = first;
-            CardParams lp = (CardParams) getChildAt(first).getLayoutParams();
-            lp.willDraw = true;
-            first--;
-        }
-        last++;
-        if (last < childCount - 1) {
-            temp[index++] = last;
-            CardParams lp = (CardParams) getChildAt(last).getLayoutParams();
-            lp.willDraw = true;
-            last++;
-        }
-
-        if (first > 0) {
-            for (int i = first; i >=0; i--) {
-                temp[index++] = i;
-            }
-        }
-        if (last < childCount - 1) {
-            for (int i = last; i <= childCount - 1; i++) {
-                temp[index++] = i;
-            }
-        }
-
-        mDrawingOrder = new int[childCount];
         for (int i = 0; i < childCount; i++) {
-            mDrawingOrder[childCount - 1 - i] = temp[i];
+            CardParams lp = (CardParams) getChildAt(i).getLayoutParams();
+            if (lp.state == CardParams.STATE_HALF_IN) {
+                lp.willDraw = true;
+                temp[index++] = i;
+            }
         }
+        for (int i = 0; i < childCount; i++) {
+            CardParams lp = (CardParams) getChildAt(i).getLayoutParams();
+            if (lp.state == CardParams.STATE_FULL_IN) {
+                lp.willDraw = true;
+                temp[index++] = i;
+            }
+        }
+        mDrawingOrder = temp;
     }
 
     private void debugLayout() {
@@ -814,9 +791,8 @@ public class CardFlow extends AdapterView<ListAdapter> {
 
         private void setContent(View content) {
             mContent = content;
-//            setBackgroundDrawable(mCardBg);
-            setBackgroundColor(0x8000ff00);
-            Log.w("sxl", "##########  " + content);
+            setBackgroundDrawable(mCardBg);
+//            setBackgroundColor(0x8000ff00);
             removeAllViewsInLayout();
             addView(content);
         }
