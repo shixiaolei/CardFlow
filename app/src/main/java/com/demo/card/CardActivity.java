@@ -13,6 +13,8 @@ public class CardActivity extends Activity implements View.OnClickListener {
 
     private CardFlow mCardFlow;
     private Button mBtn;
+    private String[] mLabels;
+    private BaseAdapter mAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,6 +23,8 @@ public class CardActivity extends Activity implements View.OnClickListener {
         mCardFlow = (CardFlow) findViewById(R.id.card_flow);
         mBtn = (Button) findViewById(R.id.btn_refresh);
         mBtn.setOnClickListener(this);
+        mLabels = genLabels();
+        mAdapter = new MyCardAdapter();
         mCardFlow.setAdapter(mAdapter);
     }
 
@@ -37,27 +41,27 @@ public class CardActivity extends Activity implements View.OnClickListener {
     }
 
     private String[] genLabels() {
-        int cardCount = Utils.random(2, 6);
+        int cardCount = Utils.random(2, 9);
         String[] result = new String[cardCount];
         for (int i = 0; i < cardCount; i++) {
             char c = (char) ('a' + i);
-            int lineCount = Utils.random(1, 8);
+            int lineCount = Utils.random(1, 12);
             String s = "";
             for (int j = 0; j < lineCount; j++) {
-                int charCount = Utils.random(1, 5);
+                int charCount = Utils.random(1, 10);
                 for (int k = 0; k < charCount; k++) {
                     s += c;
                 }
-                s += "\n";
+                if (j != lineCount - 1) {
+                    s += "\n";
+                }
             }
             result[i] = s;
         }
         return result;
     }
 
-    private String[] mLabels = genLabels();
-
-    private BaseAdapter mAdapter = new BaseAdapter() {
+    private class MyCardAdapter extends BaseAdapter {
 
         @Override
         public int getCount() {

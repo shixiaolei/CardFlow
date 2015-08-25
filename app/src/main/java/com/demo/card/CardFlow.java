@@ -405,20 +405,26 @@ public class CardFlow extends AdapterView<ListAdapter> {
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         for (int i = 0; i < getChildCount(); i++) {
             Card card = (Card) getChildAt(i);
-            CardParams lp = (CardParams) card.getLayoutParams();
             prepareLayout(card);
+        }
 
+        adjustLayouts();
+
+        for (int i = 0; i < getChildCount(); i++) {
+            Card card = (Card) getChildAt(i);
+            CardParams lp = (CardParams) card.getLayoutParams();
             int childLeft = getPaddingLeft();
             int childRight = childLeft + card.getMeasuredWidth();
             int childTop = lp.displayTop;
             int childBottom = lp.displayTop + lp.displayHeight;
             card.layout(childLeft, childTop, childRight, childBottom);
         }
+
         resetChildDrawingOrder();
         debugLayout();
     }
 
-    private TimeInterpolator mInterpolator = new AccelerateInterpolator(2);
+    private TimeInterpolator mHeightInterpolator = new AccelerateInterpolator(2);
 
     private void prepareLayout(Card card) {
         CardParams lp = (CardParams) card.getLayoutParams();
@@ -437,7 +443,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
                 int start = mExtraBorder + card.getMeasuredHeight();
                 int end = mExtraBorder;
                 lp.displayTop = (int) Utils.linearValue(start, mExtraBorder, end, 0, bottom);
-                lp.displayHeight = (int) Utils.ofValue(start, card.getMeasuredHeight(), end, mMinCardHeight, bottom, mInterpolator);
+                lp.displayHeight = (int) Utils.ofValue(start, card.getMeasuredHeight(), end, mMinCardHeight, bottom, mHeightInterpolator);
 
             } else { //已经完全划上去的卡片，露出一个边
                 lp.state = CardParams.STATE_FULL_OUT;
@@ -459,7 +465,36 @@ public class CardFlow extends AdapterView<ListAdapter> {
                 lp.displayHeight = mMinCardHeight;
             }
         }
-        card.invalidate();
+    }
+
+    private void adjustLayouts() {
+        for (int i = 0; i < getChildCount(); i++) {
+            CardParams current = getCardParamsAt(i);
+            //矫正HALF_IN的卡片高度：因为高度非线性变换，
+            // 可能导致一张很高的卡片在上，紧邻一张很矮的卡片在下，
+            // 收缩时上面卡片的底部，比下面卡片的底部还下
+            if (current.state == CardParams.STATE_HALF_IN) {
+                CardParams prev = getCardParamsAt(i - 1);
+                CardParams next = getCardParamsAt(i + 1);
+                if (next != null && next.state == CardParams.STATE_FULL_IN) { //current为顶端的半个
+                    int currentBottom = current.displayTop + current.displayHeight;
+                    int nextBottom = next.displayTop + next.displayHeight;
+                    if (currentBottom >  nextBottom) {
+                        current.displayHeight = nextBottom - current.displayTop;
+                    }
+                }
+                if (prev != null && prev.state == CardParams.STATE_FULL_IN) { //current为底端的半个
+                }
+            }
+        }
+    }
+
+    private CardParams getCardParamsAt(int i) {
+        if (i < 0 || i >= getChildCount()) {
+            return null;
+        }
+        Card card = (Card) getChildAt(i);
+        return (CardParams) card.getLayoutParams();
     }
 
     private int[] mDrawingOrder;
