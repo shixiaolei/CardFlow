@@ -2,6 +2,7 @@ package com.demo.card;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.TimeInterpolator;
 import android.content.Context;
 import android.os.Build;
 import android.view.ViewPropertyAnimator;
@@ -37,6 +38,19 @@ public class Utils {
     public static float linearValue(float x0, float y0, float x1, float y1, float x) {
         if (x0 != x1) {
             return (x - x0) * (y1 - y0) / (x1 - x0) + y0;
+        }
+        if (y0 == y1) {
+            return y0;
+        }
+        throw new IllegalArgumentException("x0 == x1, y0 != y1");
+    }
+
+
+    public static float ofValue(float x0, float y0, float x1, float y1, float x, TimeInterpolator interpolator) {
+        if (x0 != x1) {
+            float ratio = (x - x0) / (x1 - x0);
+            float r = (ratio >= 0 && ratio <= 1) ? interpolator.getInterpolation(ratio) : ratio;
+            return r * (y1 - y0) + y0;
         }
         if (y0 == y1) {
             return y0;

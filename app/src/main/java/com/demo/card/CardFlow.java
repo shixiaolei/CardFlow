@@ -1,5 +1,6 @@
 package com.demo.card;
 
+import android.animation.TimeInterpolator;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.graphics.Canvas;
@@ -417,6 +418,8 @@ public class CardFlow extends AdapterView<ListAdapter> {
         debugLayout();
     }
 
+    private TimeInterpolator mInterpolator = new AccelerateInterpolator(2);
+
     private void prepareLayout(Card card) {
         CardParams lp = (CardParams) card.getLayoutParams();
         int top = lp.scrollTop - mScrollDis;
@@ -434,12 +437,12 @@ public class CardFlow extends AdapterView<ListAdapter> {
                 int start = mExtraBorder + card.getMeasuredHeight();
                 int end = mExtraBorder;
                 lp.displayTop = (int) Utils.linearValue(start, mExtraBorder, end, 0, bottom);
-                lp.displayHeight = (int) Utils.linearValue(start, card.getMeasuredHeight(), end, mExtraBorder, bottom);
+                lp.displayHeight = (int) Utils.ofValue(start, card.getMeasuredHeight(), end, mMinCardHeight, bottom, mInterpolator);
 
             } else { //已经完全划上去的卡片，露出一个边
                 lp.state = CardParams.STATE_FULL_OUT;
                 lp.displayTop = 0;
-                lp.displayHeight = mExtraBorder;
+                lp.displayHeight = mMinCardHeight;
             }
 
         } else if (bottom > parentHeight - mExtraBorder) {
@@ -448,12 +451,12 @@ public class CardFlow extends AdapterView<ListAdapter> {
                 int start = parentHeight - mExtraBorder - card.getMeasuredHeight();
                 int end = parentHeight - mExtraBorder;
                 lp.displayTop = top;
-                lp.displayHeight = (int) Utils.linearValue(start, card.getMeasuredHeight(), end, mExtraBorder, top);
+                lp.displayHeight = (int) Utils.linearValue(start, card.getMeasuredHeight(), end, mMinCardHeight, top);
 
             } else {//已经完全划下去的卡片，露出一个边
                 lp.state = CardParams.STATE_FULL_OUT;
-                lp.displayTop = parentHeight - mExtraBorder;
-                lp.displayHeight = mExtraBorder;
+                lp.displayTop = parentHeight - mMinCardHeight;
+                lp.displayHeight = mMinCardHeight;
             }
         }
         card.invalidate();
@@ -470,7 +473,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
         for (int i = 0; i < childCount; i++) {
             CardParams lp = (CardParams) getChildAt(i).getLayoutParams();
             if (lp.state == CardParams.STATE_FULL_OUT) {
-                lp.willDraw = false;
+                lp.willDraw = true;
                 temp[index++] = i;
             }
         }
