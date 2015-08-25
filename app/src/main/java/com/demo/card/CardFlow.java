@@ -53,6 +53,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
 
     private int mDividerSize;
     private int mExtraBorder;//卡片流顶部预留的额外高度，用于露出“已经被叠到后面”的缩小后的卡片
+    private int mShrinkingArea;//卡片滚动到此距离后，开始采用Interpolator变速改变高度，以实现层叠效果
 
     private int mTotalChildHeight = 0;
     private OnScrollListener mOnScrollListener;
@@ -75,11 +76,11 @@ public class CardFlow extends AdapterView<ListAdapter> {
         mMaxFlingVelocity = config.getScaledMaximumFlingVelocity();
         mLongPressTimeout = config.getLongPressTimeout();
 
-        mOverScrollDistance = 50;
-        mOverFlingDistance = 50;
+        mOverScrollDistance = Utils.dip2px(getContext(), 16);;
+        mOverFlingDistance = Utils.dip2px(getContext(), 16);;
 
         mDividerSize = Utils.dip2px(getContext(), 4);
-        mExtraBorder = Utils.dip2px(getContext(), 30);
+        mExtraBorder = Utils.dip2px(getContext(), 15);
         mCardBgRes = R.drawable.notification_card_bg;
         mCardMaxHeightRatio = 0.85f;
 
@@ -209,7 +210,8 @@ public class CardFlow extends AdapterView<ListAdapter> {
                     int scrollY = mScrollDis;
                     if (diff > 0) {
                         notifyScrollListener(true);
-                        if (overScrollBy(0, -diff, 0, mScrollDis, 0, getScrollRange(), 0, scrollY > diff ? mOverScrollRange : mOverScrollDistance, true)) {
+                        if (overScrollBy(0, -diff, 0, mScrollDis, 0, getScrollRange(), 0,
+                                scrollY > diff ? mOverScrollRange : mOverScrollDistance, true)) {
                             mVelocityTracker.clear();
                         }
                     } else if (diff < 0) {
@@ -380,7 +382,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         mTotalChildHeight = getPaddingTop() + mExtraBorder; //各卡片完整高度(不考虑shrink)的叠加，作为滑动距离的依据
-        mMinCardHeight = Integer.MAX_VALUE;
+        int minCardHeight = Integer.MAX_VALUE;
         for (int i = 0; i < getChildCount(); i++) {
             Card card = (Card) getChildAt(i);
             CardParams lp = (CardParams) card.getLayoutParams();
@@ -391,27 +393,25 @@ public class CardFlow extends AdapterView<ListAdapter> {
             lp.scrollBottom = mTotalChildHeight + cardHeight;
             mTotalChildHeight = lp.scrollBottom + mDividerSize;
 
-            if (cardHeight > 0 && cardHeight < mMinCardHeight) {
-                mMinCardHeight = cardHeight;
+            if (cardHeight > 0 && cardHeight < minCardHeight) {
+                minCardHeight = cardHeight;
             }
-            card.postInvalidate();
         }
         mTotalChildHeight += mExtraBorder;
+        if (mScrollDis == 0) {
+            mCardRemainHeight = Math.min(minCardHeight, Utils.dip2px(getContext(), 25));
+            mShrinkingArea = mCardRemainHeight + Utils.dip2px(getContext(), 15);
+        }
     }
 
-    private int mMinCardHeight;
+    private int mCardRemainHeight;
+    private TimeInterpolator mHeightInterpolator = new AccelerateInterpolator(2);
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         for (int i = 0; i < getChildCount(); i++) {
             Card card = (Card) getChildAt(i);
             prepareLayout(card);
-        }
-
-        adjustLayouts();
-
-        for (int i = 0; i < getChildCount(); i++) {
-            Card card = (Card) getChildAt(i);
             CardParams lp = (CardParams) card.getLayoutParams();
             int childLeft = getPaddingLeft();
             int childRight = childLeft + card.getMeasuredWidth();
@@ -421,18 +421,18 @@ public class CardFlow extends AdapterView<ListAdapter> {
         }
 
         resetChildDrawingOrder();
+        resetWillDrawingFlag();
         debugLayout();
     }
-
-    private TimeInterpolator mHeightInterpolator = new AccelerateInterpolator(2);
 
     private void prepareLayout(Card card) {
         CardParams lp = (CardParams) card.getLayoutParams();
         int top = lp.scrollTop - mScrollDis;
         int bottom = lp.scrollBottom - mScrollDis;
         int parentHeight = getMeasuredHeight();
+        int parentContentBottom = parentHeight - mExtraBorder;
 
-        if (top >= mExtraBorder && bottom <= parentHeight - mExtraBorder) { //完全在边界内部的卡片
+        if (top >= mExtraBorder && bottom <= parentContentBottom) { //完全在边界内部的卡片
             lp.state = CardParams.STATE_FULL_IN;
             lp.displayHeight = card.getMeasuredHeight();
             lp.displayTop = top;
@@ -443,58 +443,51 @@ public class CardFlow extends AdapterView<ListAdapter> {
                 int start = mExtraBorder + card.getMeasuredHeight();
                 int end = mExtraBorder;
                 lp.displayTop = (int) Utils.linearValue(start, mExtraBorder, end, 0, bottom);
-                lp.displayHeight = (int) Utils.ofValue(start, card.getMeasuredHeight(), end, mMinCardHeight, bottom, mHeightInterpolator);
+                if (card.getMeasuredHeight() > mShrinkingArea) {
+                    int interpolateStart = mExtraBorder + mShrinkingArea;
+                    if (bottom > interpolateStart) {
+                        lp.displayHeight = bottom - lp.displayTop;
+                    } else {
+                        int interpolateStartY = interpolateStart - (int) Utils.linearValue(start, mExtraBorder, end, 0, interpolateStart);
+                        lp.displayHeight = (int) Utils.ofValue(interpolateStart, interpolateStartY, end, mCardRemainHeight, bottom, mHeightInterpolator);
+                    }
+                } else {
+                    lp.displayHeight = (int) Utils.ofValue(start, card.getMeasuredHeight(), end, mCardRemainHeight, bottom, mHeightInterpolator);
+                }
 
             } else { //已经完全划上去的卡片，露出一个边
                 lp.state = CardParams.STATE_FULL_OUT;
                 lp.displayTop = 0;
-                lp.displayHeight = mMinCardHeight;
+                lp.displayHeight = mCardRemainHeight;
             }
 
-        } else if (bottom > parentHeight - mExtraBorder) {
-            if (top < parentHeight - mExtraBorder) { //下面滑动到一半的卡片，一半在边界内一半在边界外
+        } else if (bottom > parentContentBottom) {
+            if (top < parentContentBottom) { //下面滑动到一半的卡片，一半在边界内一半在边界外
                 lp.state = CardParams.STATE_HALF_IN;
-                int start = parentHeight - mExtraBorder - card.getMeasuredHeight();
-                int end = parentHeight - mExtraBorder;
-                lp.displayTop = top;
-                lp.displayHeight = (int) Utils.linearValue(start, card.getMeasuredHeight(), end, mMinCardHeight, top);
+                int start = parentContentBottom - card.getMeasuredHeight();
+                int end = parentContentBottom;
+                int cardBottom = (int) Utils.linearValue(start, parentHeight - mExtraBorder, end, parentHeight, top);
+                if (card.getMeasuredHeight() > mShrinkingArea) {
+                    int interpolateStart = parentContentBottom - mShrinkingArea;
+                    if (top < interpolateStart) {
+                        lp.displayTop = top;
+                        lp.displayHeight = cardBottom - lp.displayTop;
+                    } else {
+                        int interpolateStartY = (int) Utils.linearValue(start, parentHeight - mExtraBorder, end, parentHeight, interpolateStart) - interpolateStart;
+                        lp.displayHeight = (int) Utils.ofValue(interpolateStart, interpolateStartY, end, mCardRemainHeight, top, mHeightInterpolator);
+                        lp.displayTop = cardBottom - lp.displayHeight;
+                    }
+                } else {
+                    lp.displayHeight = (int) Utils.ofValue(start, card.getMeasuredHeight(), end, mCardRemainHeight, top, mHeightInterpolator);
+                    lp.displayTop = cardBottom - lp.displayHeight;
+                }
 
             } else {//已经完全划下去的卡片，露出一个边
                 lp.state = CardParams.STATE_FULL_OUT;
-                lp.displayTop = parentHeight - mMinCardHeight;
-                lp.displayHeight = mMinCardHeight;
+                lp.displayTop = parentHeight - mCardRemainHeight;
+                lp.displayHeight = mCardRemainHeight;
             }
         }
-    }
-
-    private void adjustLayouts() {
-        for (int i = 0; i < getChildCount(); i++) {
-            CardParams current = getCardParamsAt(i);
-            //矫正HALF_IN的卡片高度：因为高度非线性变换，
-            // 可能导致一张很高的卡片在上，紧邻一张很矮的卡片在下，
-            // 收缩时上面卡片的底部，比下面卡片的底部还下
-            if (current.state == CardParams.STATE_HALF_IN) {
-                CardParams prev = getCardParamsAt(i - 1);
-                CardParams next = getCardParamsAt(i + 1);
-                if (next != null && next.state == CardParams.STATE_FULL_IN) { //current为顶端的半个
-                    int currentBottom = current.displayTop + current.displayHeight;
-                    int nextBottom = next.displayTop + next.displayHeight;
-                    if (currentBottom >  nextBottom) {
-                        current.displayHeight = nextBottom - current.displayTop;
-                    }
-                }
-                if (prev != null && prev.state == CardParams.STATE_FULL_IN) { //current为底端的半个
-                }
-            }
-        }
-    }
-
-    private CardParams getCardParamsAt(int i) {
-        if (i < 0 || i >= getChildCount()) {
-            return null;
-        }
-        Card card = (Card) getChildAt(i);
-        return (CardParams) card.getLayoutParams();
     }
 
     private int[] mDrawingOrder;
@@ -506,45 +499,73 @@ public class CardFlow extends AdapterView<ListAdapter> {
         int index = 0;
 
         for (int i = 0; i < childCount; i++) {
-            CardParams lp = (CardParams) getChildAt(i).getLayoutParams();
+            CardParams lp = getCardLayoutAt(i);
             if (lp.state == CardParams.STATE_FULL_OUT) {
-                lp.willDraw = true;
                 temp[index++] = i;
             }
         }
         for (int i = 0; i < childCount; i++) {
-            CardParams lp = (CardParams) getChildAt(i).getLayoutParams();
+            CardParams lp = getCardLayoutAt(i);
             if (lp.state == CardParams.STATE_HALF_IN) {
-                lp.willDraw = true;
                 temp[index++] = i;
             }
         }
         for (int i = 0; i < childCount; i++) {
-            CardParams lp = (CardParams) getChildAt(i).getLayoutParams();
+            CardParams lp = getCardLayoutAt(i);
             if (lp.state == CardParams.STATE_FULL_IN) {
-                lp.willDraw = true;
                 temp[index++] = i;
             }
         }
         mDrawingOrder = temp;
     }
 
-    private void debugLayout() {
-        if (!BuildConfig.DEBUG) {
-            return;
-        }
-        Log.e(TAG, "debug begin========");
+    private void resetWillDrawingFlag() {
+        int firstIn = -1, lastIn = -1;
         for (int i = 0; i < getChildCount(); i++) {
-            Card card = (Card) getChildAt(i);
-            CardParams lp = (CardParams) card.getLayoutParams();
-            Log.d(TAG, "i = " + i + ", displayTop =" + lp.displayTop
-                    + ", displayHeight = " + lp.displayHeight + ", status = " + lp.state
-                    + ", scrollTop = " + lp.scrollTop + ", scrollBottom = " + lp.scrollBottom
-                    + ", height = " + card.getMeasuredHeight() + ", parentHeight = " + getMeasuredHeight());
+            CardParams lp = getCardLayoutAt(i);
+            switch (lp.state) {
+                case CardParams.STATE_FULL_IN:
+                case CardParams.STATE_HALF_IN:
+                    if (firstIn == -1) {
+                        firstIn = i;
+                    }
+                    lastIn = i;
+                    lp.willDraw = true;
+                    break;
+                case CardParams.STATE_FULL_OUT:
+                    lp.willDraw = false;
+                    break;
+            }
         }
-        Log.i(TAG, "drawing order: " + Arrays.toString(mDrawingOrder));
-        Log.e(TAG, "debug end========");
 
+        CardParams top = getCardLayoutAt(firstIn - 1);
+        if (top != null) {
+            top.willDraw = true;
+        }
+        CardParams bottom = getCardLayoutAt(lastIn + 1);
+        if (bottom != null) {
+            bottom.willDraw = true;
+        }
+    }
+
+    private CardParams getCardLayoutAt(int i) {
+        return i < 0 || i >= getChildCount() ? null : (CardParams) getChildAt(i).getLayoutParams();
+    }
+
+    private void debugLayout() {
+        if (BuildConfig.DEBUG) {
+            Log.e(TAG, "debug begin========");
+            for (int i = 0; i < getChildCount(); i++) {
+                Card card = (Card) getChildAt(i);
+                CardParams lp = (CardParams) card.getLayoutParams();
+                Log.d(TAG, "i = " + i + ", displayTop =" + lp.displayTop
+                        + ", displayHeight = " + lp.displayHeight + ", status = " + lp.state
+                        + ", scrollTop = " + lp.scrollTop + ", scrollBottom = " + lp.scrollBottom
+                        + ", height = " + card.getMeasuredHeight() + ", parentHeight = " + getMeasuredHeight());
+            }
+            Log.i(TAG, "drawing order: " + Arrays.toString(mDrawingOrder));
+            Log.e(TAG, "debug end========");
+        }
     }
 
     @Override
