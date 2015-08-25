@@ -17,6 +17,8 @@ import android.widget.AdapterView;
 import android.widget.ListAdapter;
 import android.widget.OverScroller;
 
+import java.util.Arrays;
+
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
@@ -114,7 +116,6 @@ public class CardFlow extends AdapterView<ListAdapter> {
         }
         if ((ev.getAction() & MotionEvent.ACTION_MASK) != MotionEvent.ACTION_DOWN) {
             if (mDisableScroll) {
-                Log.d("sxl", "isUnableToDrag = tru@@@@@@@@@@@@@@@@@@@@@@@@@e");
                 return false;
             }
         }
@@ -393,6 +394,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
             if (cardHeight > 0 && cardHeight < mMinCardHeight) {
                 mMinCardHeight = cardHeight;
             }
+            card.postInvalidate();
         }
         mTotalChildHeight += mExtraBorder;
     }
@@ -413,6 +415,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
             card.layout(childLeft, childTop, childRight, childBottom);
         }
         resetChildDrawingOrder();
+        debugLayout();
     }
 
     private void prepareLayout(Card card) {
@@ -432,12 +435,12 @@ public class CardFlow extends AdapterView<ListAdapter> {
                 int start = mExtraBorder + card.getMeasuredHeight();
                 int end = mExtraBorder;
                 lp.displayTop = (int) Utils.linearValue(start, mExtraBorder, end, 0, bottom);
-                lp.displayHeight = (int) Utils.linearValue(start, card.getMeasuredHeight(), end, mMinCardHeight, bottom);
+                lp.displayHeight = (int) Utils.linearValue(start, card.getMeasuredHeight(), end, mExtraBorder, bottom);
 
             } else { //已经完全划上去的卡片，露出一个边
                 lp.state = CardParams.STATE_FULL_OUT;
                 lp.displayTop = 0;
-                lp.displayHeight = mMinCardHeight;
+                lp.displayHeight = mExtraBorder;
             }
 
         } else if (bottom > parentHeight - mExtraBorder) {
@@ -510,6 +513,24 @@ public class CardFlow extends AdapterView<ListAdapter> {
         for (int i = 0; i < childCount; i++) {
             mDrawingOrder[childCount - 1 - i] = temp[i];
         }
+    }
+
+    private void debugLayout() {
+        if (!BuildConfig.DEBUG) {
+            return;
+        }
+        Log.e(TAG, "debug begin========");
+        for (int i = 0; i < getChildCount(); i++) {
+            Card card = (Card) getChildAt(i);
+            CardParams lp = (CardParams) card.getLayoutParams();
+            Log.d(TAG, "i = " + i + ", displayTop =" + lp.displayTop
+                    + ", displayHeight = " + lp.displayHeight + ", status = " + lp.state
+                    + ", scrollTop = " + lp.scrollTop + ", scrollBottom = " + lp.scrollBottom
+                    + ", height = " + card.getMeasuredHeight() + ", parentHeight = " + getMeasuredHeight());
+        }
+        Log.i(TAG, "drawing order: " + Arrays.toString(mDrawingOrder));
+        Log.e(TAG, "debug end========");
+
     }
 
     @Override
@@ -793,7 +814,9 @@ public class CardFlow extends AdapterView<ListAdapter> {
 
         private void setContent(View content) {
             mContent = content;
-            setBackgroundDrawable(mCardBg);
+//            setBackgroundDrawable(mCardBg);
+            setBackgroundColor(0x8000ff00);
+            Log.w("sxl", "##########  " + content);
             removeAllViewsInLayout();
             addView(content);
         }
