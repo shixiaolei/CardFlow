@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.TimeInterpolator;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.os.Build;
 import android.view.ViewPropertyAnimator;
 
@@ -131,5 +132,10 @@ public class Utils {
                 }
             } : null);
         }
+    }
+
+    public static boolean isLandscape() {
+        return App.res().getConfiguration().orientation
+                == Configuration.ORIENTATION_LANDSCAPE;
     }
 }

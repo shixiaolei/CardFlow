@@ -4,6 +4,8 @@ import android.animation.TimeInterpolator;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -60,7 +62,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
     private OnClickListener mOnClickOnBlankListener;
     private long mLastClickTime;
     private Card mLastClickCard;
-    private int mCardBgRes;
+    private Drawable mCardBg;
     private float mCardMaxHeightRatio;
 
     public CardFlow(Context context) {
@@ -81,7 +83,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
 
         mDividerSize = Utils.dip2px(getContext(), 4);
         mExtraBorder = Utils.dip2px(getContext(), 15);
-        mCardBgRes = R.drawable.notification_card_bg;
+        mCardBg = getResources().getDrawable(R.drawable.notification_card_bg);
         mCardMaxHeightRatio = 0.85f;
 
         setOverScrollMode(OVER_SCROLL_ALWAYS);
@@ -100,8 +102,8 @@ public class CardFlow extends AdapterView<ListAdapter> {
         mOnClickOnBlankListener = listener;
     }
 
-    public void setCardBgRes(int bg) {
-        mCardBgRes = bg;
+    public void setCardBg(Drawable bg) {
+        mCardBg = bg;
     }
 
     public void setCardMaxHeightRatio(float ratio) {
@@ -255,16 +257,16 @@ public class CardFlow extends AdapterView<ListAdapter> {
                         tracker.computeCurrentVelocity(1000, mMaxFlingVelocity);
                         float vx = tracker.getXVelocity();
                         mLastX = (int) event.getX();
-                        if (vx > mMinFlingVelocity) {
+                        if (vx > mMinFlingVelocity * 7) {
                             onSlipDelete(false);
-                        } else if (vx < -mMinFlingVelocity) {
+                        } else if (vx < -mMinFlingVelocity * 7) {
                             onSlipDelete(true);
                         } else {
                             int diffX = mLastX - mDownX;
-                            int minDeleteDistance = (int) (getMeasuredWidth() * 0.15f);
+                            int minDeleteDistance = (int) (getMeasuredWidth() * 0.2f);
                             if (diffX > minDeleteDistance) {
                                 onSlipDelete(false);
-                            } else if (minDeleteDistance < -minDeleteDistance) {
+                            } else if (diffX < -minDeleteDistance) {
                                 onSlipDelete(true);
                             } else {
                                 onSlipReset();
@@ -319,6 +321,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
 
     public void reset() {
         mScrollDis = 0;
+        mShouldResetScrollDistance = false;
     }
 
     private void requestParentDisallowInterceptTouchEvent(boolean disallowIntercept) {
@@ -402,6 +405,15 @@ public class CardFlow extends AdapterView<ListAdapter> {
             mCardRemainHeight = Math.min(minCardHeight, Utils.dip2px(getContext(), 25));
             mShrinkingArea = mCardRemainHeight + Utils.dip2px(getContext(), 15);
         }
+
+        int minHeight = getSuggestedMinimumHeight();
+        if (Utils.isLandscape()) {
+            minHeight *= 0.6f;
+        }
+        int adjustHeight = Math.max(minHeight, mTotalChildHeight);
+        if (adjustHeight < getMeasuredHeight()) {
+            setMeasuredDimension(getMeasuredWidth(), adjustHeight);
+        }
     }
 
     private int mCardRemainHeight;
@@ -422,6 +434,9 @@ public class CardFlow extends AdapterView<ListAdapter> {
 
         resetChildDrawingOrder();
         resetWillDrawingFlag();
+        resetScrollDistance();
+        mShouldResetScrollDistance = false;
+
         debugLayout();
     }
 
@@ -548,6 +563,36 @@ public class CardFlow extends AdapterView<ListAdapter> {
         }
     }
 
+    private void resetScrollDistance() {
+        if (!mShouldResetScrollDistance || getChildCount() == 0) {
+            return;
+        }
+        Card card = (Card) getChildAt(getChildCount() - 1);
+        CardParams lp = getCardLayoutAt(getChildCount() - 1);
+        int distance = 0;
+        if (mTotalChildHeight <= getMeasuredHeight()) {
+            distance = 0;
+        } else {
+            distance =  mTotalChildHeight - getMeasuredHeight() - mExtraBorder;
+        }
+        final int target = distance;
+        if (target > mScrollDis) {
+            return;
+        }
+        if (BuildConfig.DEBUG) {
+            Log.v(TAG, "resetScrollDistance before = " + mScrollDis + ", after = " + distance);
+        }
+
+        post(new Runnable() {
+            @Override
+            public void run() {
+                mScrollDis = target;
+                requestLayout();
+                invalidate();
+            }
+        });
+    }
+
     private CardParams getCardLayoutAt(int i) {
         return i < 0 || i >= getChildCount() ? null : (CardParams) getChildAt(i).getLayoutParams();
     }
@@ -670,6 +715,8 @@ public class CardFlow extends AdapterView<ListAdapter> {
         }
     }
 
+    private boolean mShouldResetScrollDistance;
+
     private void reloadData() {
         if (BuildConfig.DEBUG) {
             Log.i(TAG, "reloadData(), size = " + mAdapter.getCount());
@@ -677,8 +724,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
         removeAllViewsInLayout();
         for (int i = 0; i < mAdapter.getCount(); i++) {
             View body = mAdapter.getView(i, null, null);
-            final Card card = new Card(getContext());
-            card.setContent(body);
+            final Card card = new Card(getContext(), body);
             final CardParams lp = generateDefaultLayoutParams();
             lp.position = i;
             lp.itemId = mAdapter.getItemId(i);
@@ -773,6 +819,7 @@ public class CardFlow extends AdapterView<ListAdapter> {
                     public void run() {
                         CardParams lp = (CardParams) card.getLayoutParams();
                         mSlipDeleteCallBack.onDelete(CardFlow.this, lp.position);
+                        mShouldResetScrollDistance = true;
                     }
                 });
             }
@@ -843,45 +890,44 @@ public class CardFlow extends AdapterView<ListAdapter> {
 
         private View mContent;
 
-        public Card(Context context) {
+        public Card(Context context, View content) {
             super(context);
-        }
-
-        private void setContent(View content) {
             mContent = content;
-            setBackgroundDrawable(getResources().getDrawable(mCardBgRes));
+            if (mCardBg == null) {
+                setBackgroundColor(Color.TRANSPARENT);
+            } else {
+                try {
+                    setBackgroundDrawable(mCardBg.getConstantState().newDrawable(getResources()));
+                } catch (Throwable ignored) {
+                }
+            }
             removeAllViewsInLayout();
-            addView(content);
+
+            LayoutParams params = mContent.getLayoutParams();
+            if (params == null) {
+                params = generateDefaultLayoutParams();
+            }
+            addViewInLayout(content, 0, params);
         }
 
         @Override
         public void addView(View child) {
-            ensureChildrenCount();
-            super.addView(child);
+            throw new UnsupportedOperationException("addView() is not supported in Card");
         }
 
         @Override
         public void addView(View child, int index) {
-            ensureChildrenCount();
-            super.addView(child, index);
+            throw new UnsupportedOperationException("addView() is not supported in Card");
         }
 
         @Override
         public void addView(View child, LayoutParams params) {
-            ensureChildrenCount();
-            super.addView(child, params);
+            throw new UnsupportedOperationException("addView() is not supported in Card");
         }
 
         @Override
         public void addView(View child, int index, LayoutParams params) {
-            ensureChildrenCount();
-            super.addView(child, index, params);
-        }
-
-        private void ensureChildrenCount() {
-            if (getChildCount() > 0) {
-                throw new IllegalStateException("Card can host only one direct child");
-            }
+            throw new UnsupportedOperationException("addView() is not supported in Card");
         }
 
         @Override
@@ -892,10 +938,6 @@ public class CardFlow extends AdapterView<ListAdapter> {
             }
 
             int parentHeightSize = MeasureSpec.getSize(heightMeasureSpec);
-            int parentHeightMode = MeasureSpec.getMode(heightMeasureSpec);
-            if (parentHeightMode != MeasureSpec.AT_MOST && parentHeightMode != MeasureSpec.EXACTLY) {
-                throw new IllegalStateException("parentHeightMode should not be UNSPECIFIED.");
-            }
             int childMaxHeight = (int) (parentHeightSize * mCardMaxHeightRatio);
             int childHeightSpec = MeasureSpec.makeMeasureSpec(childMaxHeight, MeasureSpec.AT_MOST);
             measureChild(mContent, widthMeasureSpec, childHeightSpec);
